@@ -109,7 +109,7 @@ AuraDial::AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFe
 
 void AuraDial::resized()
 {
-    const auto bounds = getLocalBounds();
+    auto bounds = getLocalBounds();
     titleLabel.setBounds(bounds.removeFromTop(22));
     slider.setBounds(bounds.removeFromTop(132).reduced(5, 0));
     valueLabel.setBounds(bounds.removeFromTop(25));
