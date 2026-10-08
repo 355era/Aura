@@ -1,51 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1040" height="620" viewBox="0 0 1040 620" role="img" aria-labelledby="title desc">
   <title id="title">Aura by 355ERA — spectral grain shifter</title>
-  <desc id="desc">Scalable, vector-drawn deep forest and plum interface with a live lily visualizer and seven FFT and granular controls.</desc>
+  <desc id="desc">Scalable, vector-drawn dark charcoal, orchid, and mint interface with a live lily visualizer and seven FFT and granular controls.</desc>
   <defs>
-    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#26332e"/><stop offset="1" stop-color="#171c22"/></linearGradient>
-    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#293933"/><stop offset="1" stop-color="#202b29"/></linearGradient>
-    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9be3c1"/><stop offset="1" stop-color="#b689e7"/></linearGradient>
-    <radialGradient id="halo"><stop stop-color="#b689e7" stop-opacity=".28"/><stop offset="1" stop-color="#b689e7" stop-opacity="0"/></radialGradient>
-    <linearGradient id="dial" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#415950"/><stop offset="1" stop-color="#26352f"/></linearGradient>
-    <pattern id="seeds" width="58" height="49" patternUnits="userSpaceOnUse"><circle cx="10" cy="12" r="1" fill="#82b49b" opacity=".16"/><circle cx="41" cy="34" r="1" fill="#82b49b" opacity=".11"/></pattern>
+    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#171925"/><stop offset="1" stop-color="#090a10"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#25283b"/><stop offset="1" stop-color="#1d2030"/></linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#82eadc"/><stop offset="1" stop-color="#a978ff"/></linearGradient>
+    <radialGradient id="halo"><stop stop-color="#a978ff" stop-opacity=".28"/><stop offset="1" stop-color="#a978ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="dial" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#42455e"/><stop offset="1" stop-color="#191b27"/></linearGradient>
+    <pattern id="seeds" width="58" height="49" patternUnits="userSpaceOnUse"><circle cx="10" cy="12" r="1" fill="#70d7bb" opacity=".16"/><circle cx="41" cy="34" r="1" fill="#70d7bb" opacity=".11"/></pattern>
     <path id="petal" d="M0-8 C13-23 15-43 0-62 C-15-43-13-23 0-8Z"/>
     <style>
       text { font-family: Inter, "Segoe UI", Arial, sans-serif; }
-      .cream { fill:#edf5e9 } .muted { fill:#a2b4aa } .mint { fill:#9be3c1 }
+      .cream { fill:#f2f1ff } .muted { fill:#9b9fb2 } .mint { fill:#82eadc }
       .caps { letter-spacing:1.8px }
     </style>
   </defs>
-  <rect width="1040" height="620" fill="#12171a"/>
-  <rect x="8" y="8" width="1024" height="604" rx="23" fill="url(#shell)" stroke="#485b53"/>
+  <rect width="1040" height="620" fill="#090a10"/>
+  <rect x="8" y="8" width="1024" height="604" rx="23" fill="url(#shell)" stroke="#343849"/>
   <rect x="24" y="72" width="992" height="480" fill="url(#seeds)" opacity=".6"/>
-  <g fill="none" stroke="#82b49b" stroke-linecap="round" stroke-linejoin="round"><path d="M31 43 C34 35 37 31 42 26 C42 34 39 40 31 43Z"/><path d="M37 35 C36 29 30 27 26 28 C27 34 31 38 37 35Z"/></g>
+  <g fill="none" stroke="#70d7bb" stroke-linecap="round" stroke-linejoin="round"><path d="M31 43 C34 35 37 31 42 26 C42 34 39 40 31 43Z"/><path d="M37 35 C36 29 30 27 26 28 C27 34 31 38 37 35Z"/></g>
   <text x="53" y="44" class="cream" font-size="13" font-weight="700" letter-spacing="1.2">355ERA</text>
   <text x="145" y="43" class="muted caps" font-size="9">BOTANICAL SOUND OBJECTS</text>
-  <circle cx="830" cy="36" r="3" fill="#ffc895"/><text x="1000" y="40" class="muted caps" font-size="9" text-anchor="end">FFT + GRAIN ENGINE</text>
-  <path d="M28 62 H1012" stroke="#485b53"/>
+  <circle cx="830" cy="36" r="3" fill="#ff997f"/><text x="1000" y="40" class="muted caps" font-size="9" text-anchor="end">FFT + GRAIN ENGINE</text>
+  <path d="M28 62 H1012" stroke="#343849"/>
   <text x="39" y="132" class="cream" font-size="46" font-weight="700" letter-spacing="2">AURA</text>
   <text x="42" y="163" class="mint" font-size="10" font-weight="700" letter-spacing="2">SPECTRAL GRAIN SHIFTER</text>
   <text x="42" y="188" class="muted" font-size="11">Refract a sound into new growth.</text>
-  <path d="M310 90 V548" stroke="#485b53"/>
+  <path d="M310 90 V548" stroke="#343849"/>
   <text x="330" y="111" class="mint caps" font-size="9" font-weight="700">SPECTRAL GARDEN</text>
   <text x="330" y="130" class="muted" font-size="9.5">Shift, bloom, then scatter the grains.</text>
-  <g fill="url(#card)" stroke="#485b53" stroke-opacity=".8">
+  <g fill="url(#card)" stroke="#343849" stroke-opacity=".8">
     <rect x="322" y="170" width="150" height="151" rx="13"/><rect x="482" y="170" width="150" height="151" rx="13"/>
     <rect x="642" y="170" width="150" height="151" rx="13"/><rect x="802" y="170" width="150" height="151" rx="13"/>
     <rect x="402" y="333" width="150" height="151" rx="13"/><rect x="562" y="333" width="150" height="151" rx="13"/>
     <rect x="722" y="333" width="150" height="151" rx="13"/>
   </g>
   <circle cx="166" cy="316" r="106" fill="url(#halo)"/>
-  <circle cx="166" cy="316" r="94" fill="none" stroke="#485b53"/>
-  <circle cx="166" cy="316" r="76" fill="none" stroke="#82b49b" stroke-opacity=".55"/>
-  <g transform="translate(166 316)" stroke="#82b49b" stroke-width="1" stroke-opacity=".72">
-    <use href="#petal" fill="#b689e7" fill-opacity=".72"/><use href="#petal" fill="#b689e7" fill-opacity=".72" transform="rotate(60)"/><use href="#petal" fill="#b689e7" fill-opacity=".72" transform="rotate(120)"/>
-    <use href="#petal" fill="#b689e7" fill-opacity=".72" transform="rotate(180)"/><use href="#petal" fill="#b689e7" fill-opacity=".72" transform="rotate(240)"/><use href="#petal" fill="#b689e7" fill-opacity=".72" transform="rotate(300)"/>
-    <use href="#petal" fill="#f1c8ed" transform="scale(.73) rotate(30)"/><use href="#petal" fill="#f1c8ed" transform="scale(.73) rotate(90)"/><use href="#petal" fill="#f1c8ed" transform="scale(.73) rotate(150)"/>
-    <use href="#petal" fill="#f1c8ed" transform="scale(.73) rotate(210)"/><use href="#petal" fill="#f1c8ed" transform="scale(.73) rotate(270)"/><use href="#petal" fill="#f1c8ed" transform="scale(.73) rotate(330)"/>
+  <circle cx="166" cy="316" r="94" fill="none" stroke="#343849"/>
+  <circle cx="166" cy="316" r="76" fill="none" stroke="#70d7bb" stroke-opacity=".55"/>
+  <g transform="translate(166 316)" stroke="#70d7bb" stroke-width="1" stroke-opacity=".72">
+    <use href="#petal" fill="#a978ff" fill-opacity=".72"/><use href="#petal" fill="#a978ff" fill-opacity=".72" transform="rotate(60)"/><use href="#petal" fill="#a978ff" fill-opacity=".72" transform="rotate(120)"/>
+    <use href="#petal" fill="#a978ff" fill-opacity=".72" transform="rotate(180)"/><use href="#petal" fill="#a978ff" fill-opacity=".72" transform="rotate(240)"/><use href="#petal" fill="#a978ff" fill-opacity=".72" transform="rotate(300)"/>
+    <use href="#petal" fill="#efb9f6" transform="scale(.73) rotate(30)"/><use href="#petal" fill="#efb9f6" transform="scale(.73) rotate(90)"/><use href="#petal" fill="#efb9f6" transform="scale(.73) rotate(150)"/>
+    <use href="#petal" fill="#efb9f6" transform="scale(.73) rotate(210)"/><use href="#petal" fill="#efb9f6" transform="scale(.73) rotate(270)"/><use href="#petal" fill="#efb9f6" transform="scale(.73) rotate(330)"/>
   </g>
-  <g stroke="#ffc895" stroke-width="1.4" stroke-linecap="round"><path d="M166 316L166 301M166 316L179 308M166 316L179 324M166 316L166 331M166 316L153 324M166 316L153 308"/></g>
-  <circle cx="166" cy="316" r="8" fill="#edf5e9" stroke="#ffc895"/><circle cx="166" cy="316" r="3" fill="#ffc895"/>
+  <g stroke="#ff997f" stroke-width="1.4" stroke-linecap="round"><path d="M166 316L166 301M166 316L179 308M166 316L179 324M166 316L166 331M166 316L153 324M166 316L153 308"/></g>
+  <circle cx="166" cy="316" r="8" fill="#f2f1ff" stroke="#ff997f"/><circle cx="166" cy="316" r="3" fill="#ff997f"/>
   <text x="166" y="434" class="muted caps" font-size="8" font-weight="700" text-anchor="middle">LIVE LEVEL</text>
   <!-- Reusable drawn control face -->
   <g text-anchor="middle" font-size="9" font-weight="700" letter-spacing="1.3">
@@ -53,20 +53,20 @@
     <text x="477" y="355" class="cream">SIZE</text><text x="637" y="355" class="cream">DENSITY</text><text x="797" y="355" class="cream">FEEDBACK</text>
   </g>
   <g>
-    <g transform="translate(397 244)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 0-34" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L0-20" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
-    <g transform="translate(557 244)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 19-28" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L18-13" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
-    <g transform="translate(717 244)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 9-33" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L8-19" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
-    <g transform="translate(877 244)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 20-27" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L19-12" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
-    <g transform="translate(477 407)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 20-27" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L19-12" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
-    <g transform="translate(637 407)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 16-30" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L15-15" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
-    <g transform="translate(797 407)"><circle r="34" fill="url(#dial)" stroke="#485b53"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#485b53" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 12-32" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L12-17" stroke="#edf5e9" stroke-width="2"/><circle r="3" fill="#ffc895"/></g>
+    <g transform="translate(397 244)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 0-34" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L0-20" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
+    <g transform="translate(557 244)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 19-28" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L18-13" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
+    <g transform="translate(717 244)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 9-33" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L8-19" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
+    <g transform="translate(877 244)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 20-27" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L19-12" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
+    <g transform="translate(477 407)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 20-27" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L19-12" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
+    <g transform="translate(637 407)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 16-30" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L15-15" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
+    <g transform="translate(797 407)"><circle r="34" fill="url(#dial)" stroke="#343849"/><path d="M-24 24 A34 34 0 1 1 24 24" fill="none" stroke="#343849" stroke-width="4"/><path d="M-24 24 A34 34 0 0 1 12-32" fill="none" stroke="url(#ring)" stroke-width="4" stroke-linecap="round"/><path d="M0 0L12-17" stroke="#f2f1ff" stroke-width="2"/><circle r="3" fill="#ff997f"/></g>
   </g>
   <g text-anchor="middle" font-size="12" font-weight="700" class="cream">
-    <text x="397" y="292">+0 st</text><text x="557" y="292">100 %</text><text x="717" y="292">18 %</text><text x="877" y="292">22 %</text>
+    <text x="397" y="292">0.0 Hz</text><text x="557" y="292">100 %</text><text x="717" y="292">18 %</text><text x="877" y="292">22 %</text>
     <text x="477" y="455">120 ms</text><text x="637" y="455">12.0 gr/s</text><text x="797" y="455">18 %</text>
   </g>
-  <g text-anchor="middle" class="muted" font-size="7.5" letter-spacing="1"><text x="397" y="309">SEMITONES</text><text x="557" y="309">DRY / WET</text><text x="717" y="309">SPECTRAL DENSITY</text><text x="877" y="309">GRANULAR LAYER</text><text x="477" y="472">WINDOW LENGTH</text><text x="637" y="472">GRAINS PER SEC</text><text x="797" y="472">GRAIN REPEATS</text></g>
-  <path d="M30 566H1010" stroke="#485b53"/>
+  <g text-anchor="middle" class="muted" font-size="7.5" letter-spacing="1"><text x="397" y="309">FREQUENCY OFFSET</text><text x="557" y="309">DRY / WET</text><text x="717" y="309">SPECTRAL DENSITY</text><text x="877" y="309">GRANULAR LAYER</text><text x="477" y="472">WINDOW LENGTH</text><text x="637" y="472">GRAINS PER SEC</text><text x="797" y="472">GRAIN REPEATS</text></g>
+  <path d="M30 566H1010" stroke="#343849"/>
   <text x="36" y="592" class="muted caps" font-size="8">2048 FFT · 4× OVERLAP · GRAIN FEEDBACK</text>
   <text x="1000" y="592" class="mint caps" font-size="8" text-anchor="end">355ERA / FIELD SERIES 01</text>
 </svg>

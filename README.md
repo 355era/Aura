@@ -6,7 +6,7 @@
 
 ## Controls
 
-- **Shift** — pitch-shifts the spectrum in one-semitone steps from −24 to +24. Double-click the knob to return to zero.
+- **Shift** — continuously translates spectral frequencies by −1500 to +1500 Hz in 0.1 Hz steps. This is a frequency-domain offset, not semitone transposition. Double-click the knob to return to zero.
 - **Mix** — blends the latency-matched dry signal with the shifted signal.
 - **Bloom** — diffuses energy across neighboring spectral bins for a denser, softer tone.
 - **Grain** — blends in a granular delay layer after the spectral processor.
@@ -14,9 +14,9 @@
 - **Density** — sets the grain trigger rate from 2 to 24 grains per second.
 - **Feedback** — feeds grain output back into the delay buffer. Feedback is bounded and softly saturated.
 
-The processor uses a custom 2048-point radix-2 FFT, 4× overlap-add, per-bin phase tracking, and spectral-bin remapping. The grain engine uses eight preallocated Hann-windowed playback voices per channel, interpolated reads, and a two-second circular buffer. Its audio buffers are allocated before playback, so processing does not allocate memory on the audio thread. The plugin reports its 2048-sample FFT latency to the host and a two-second tail for the granular feedback. Controls are automatable and saved in the DAW project. The lily visualizer responds to input level.
+The processor uses a custom 2048-point radix-2 FFT and 4× overlap-add to form an analytic signal, then applies a phase-continuous frequency offset in Hz. A Nyquist guard removes content that would alias when shifting upward. Shift and blend controls are smoothed to avoid abrupt automation steps. The grain engine uses eight preallocated Hann-windowed playback voices per channel, interpolated reads, and a two-second circular buffer. Feedback saturation is confined to the feedback signal, so it does not saturate the incoming sample. Its audio buffers are allocated before playback, so processing does not allocate memory on the audio thread. The plugin reports its 2048-sample FFT latency to the host and a two-second tail for the granular feedback. Controls are automatable and saved in the DAW project. The lily visualizer responds to input level.
 
-The editor can be resized proportionally from 780 × 465 to 1560 × 930, so the background, lily, labels, and controls scale together in hosts such as Ableton Live. Artwork uses vector paths and text instead of stretched bitmap UI, keeping the edges and lettering clear as the window changes size.
+The editor keeps its existing layout and can be resized proportionally from 780 × 465 to 1560 × 930, so the darker, Portal-inspired charcoal, orchid, and mint treatment, lily visualizer, labels, and controls scale together in hosts such as Ableton Live. Artwork uses vector paths and text instead of stretched bitmap UI, keeping edges and lettering clear at different sizes.
 
 ## Build on Windows
 
@@ -49,7 +49,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release --target Aura_VST3
 ```
 
-CMake downloads the pinned JUCE 9.0.3 source on the first configure, so the first build needs network access. A GitHub Actions workflow is included to build the VST3 target on Windows, macOS Intel, and Linux, then attach each platform's VST3 bundle to the workflow run as a downloadable artifact.
+CMake downloads the pinned JUCE 9.0.3 source on the first configure, so the first build needs network access. A GitHub Actions workflow is included to build the VST3 target on Windows, macOS Intel, and Linux, then attach each platform's VST3 bundle to the workflow run as a downloadable artifact. Aura does not bundle sample libraries; a VST3 bundle around a few megabytes is normal for a vector interface and native DSP, and file size does not measure audio quality.
 
 ## Add to GitHub
 
