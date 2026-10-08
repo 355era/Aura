@@ -20,7 +20,7 @@ The editor keeps its existing layout and can be resized proportionally from 780 
 
 ## Presets
 
-Choose one of the factory presets from the **Preset** menu to load its settings. To save the current control values, click **Save Preset**, enter a name, then press **Save** (or Enter); press Escape or **Cancel** to leave without saving. Selecting a saved user preset and saving again with its existing name updates that file. A name already used by another preset is saved as a numbered copy rather than overwriting it. User presets are portable XML files (`.aupreset`) stored in the user's application data folder under `355ERA/Aura/Presets`; they remain available across sessions and are also stored inside the DAW project when the host saves Aura's state.
+The menu includes five factory presets: **Botanical Init**, **Leaf Veil**, **Pollen Drift**, **Glass Orchid**, and **Rain Memory**. Choose one to load its settings. To save the current control values, click **Save Preset**, enter a name, then press **Save** (or Enter); press Escape or **Cancel** to leave without saving. Selecting a saved user preset and saving again with its existing name updates that file. A name already used by another preset is saved as a numbered copy rather than overwriting it. User presets are portable XML files (`.aupreset`) stored in the user's application data folder under `355ERA/Aura/Presets`; they remain available across sessions and are also stored inside the DAW project when the host saves Aura's state.
 
 ## Build on Windows
 
