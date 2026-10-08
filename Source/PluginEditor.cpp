@@ -1,5 +1,7 @@
 #include "PluginEditor.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace
@@ -15,6 +17,25 @@ const juce::Colour warmAccentColour{ 0xffff997f };
 const juce::Colour lilyColour{ 0xffa978ff };
 const juce::Colour lilyLightColour{ 0xffefb9f6 };
 const juce::Colour cardColour{ 0xff1d2030 };
+
+struct FactoryPreset
+{
+    const char* name;
+    std::array<float, 7> values;
+};
+
+constexpr std::array<FactoryPreset, 5> factoryPresets{{
+    { "Botanical Init", { 0.0f, 100.0f, 18.0f, 22.0f, 120.0f, 12.0f, 18.0f } },
+    { "Leaf Veil",      { 74.0f, 82.0f, 24.0f, 26.0f, 155.0f, 10.0f, 14.0f } },
+    { "Pollen Drift",   { 185.0f, 78.0f, 34.0f, 38.0f, 92.0f, 18.0f, 24.0f } },
+    { "Glass Orchid",   { -245.0f, 68.0f, 14.0f, 44.0f, 72.0f, 20.0f, 32.0f } },
+    { "Rain Memory",    { 38.0f, 90.0f, 42.0f, 52.0f, 215.0f, 7.0f, 48.0f } }
+}};
+
+constexpr std::array<const char*, 7> presetParameterIDs{
+    "shift", "mix", "bloom", "grain", "grainsize", "density", "feedback"
+};
+constexpr int userPresetStartID = 100;
 }
 
 void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, int width, int height,
@@ -175,6 +196,51 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     addAndMakeVisible(grainSizeDial);
     addAndMakeVisible(densityDial);
     addAndMakeVisible(feedbackDial);
+
+    presetLabel.setText("PRESET", juce::dontSendNotification);
+    presetLabel.setColour(juce::Label::textColourId, mutedTextColour);
+    presetLabel.setJustificationType(juce::Justification::centredLeft);
+    addAndMakeVisible(presetLabel);
+
+    presetSelector.setTextWhenNothingSelected("Choose preset");
+    presetSelector.setColour(juce::ComboBox::backgroundColourId, cardColour);
+    presetSelector.setColour(juce::ComboBox::textColourId, brightLeafColour);
+    presetSelector.setColour(juce::ComboBox::arrowColourId, aquaColour);
+    presetSelector.setColour(juce::ComboBox::outlineColourId, softLineColour);
+    presetSelector.onChange = [this] { loadSelectedPreset(); };
+    addAndMakeVisible(presetSelector);
+
+    savePresetButton.setColour(juce::TextButton::buttonColourId, aquaColour);
+    savePresetButton.setColour(juce::TextButton::buttonOnColourId, leafColour);
+    savePresetButton.setColour(juce::TextButton::textColourOffId, backgroundColour);
+    savePresetButton.setColour(juce::TextButton::textColourOnId, backgroundColour);
+    savePresetButton.onClick = [this] { beginSavingPreset(); };
+    addAndMakeVisible(savePresetButton);
+
+    presetNameEditor.setColour(juce::TextEditor::backgroundColourId, cardColour);
+    presetNameEditor.setColour(juce::TextEditor::textColourId, brightLeafColour);
+    presetNameEditor.setColour(juce::TextEditor::outlineColourId, softLineColour);
+    presetNameEditor.setColour(juce::TextEditor::focusedOutlineColourId, aquaColour);
+    presetNameEditor.setTextToShowWhenEmpty("Name your preset", mutedTextColour);
+    presetNameEditor.setInputRestrictions(48);
+    presetNameEditor.onReturnKey = [this] { savePresetFromEditor(); };
+    presetNameEditor.onEscapeKey = [this] { cancelSavingPreset(); };
+    addAndMakeVisible(presetNameEditor);
+    presetNameEditor.setVisible(false);
+
+    confirmPresetButton.setColour(juce::TextButton::buttonColourId, aquaColour);
+    confirmPresetButton.setColour(juce::TextButton::textColourOffId, backgroundColour);
+    confirmPresetButton.onClick = [this] { savePresetFromEditor(); };
+    addAndMakeVisible(confirmPresetButton);
+    confirmPresetButton.setVisible(false);
+
+    cancelPresetButton.setColour(juce::TextButton::buttonColourId, cardColour);
+    cancelPresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
+    cancelPresetButton.onClick = [this] { cancelSavingPreset(); };
+    addAndMakeVisible(cancelPresetButton);
+    cancelPresetButton.setVisible(false);
+
+    refreshPresetMenu();
     startTimerHz(30);
 }
 
@@ -336,6 +402,188 @@ void AuraAudioProcessorEditor::resized()
               bottomRowY);
     placeDial(feedbackDial, firstDialX + dialWidth / 2 + dialGap / 2 + (dialWidth + dialGap) * 2,
               bottomRowY);
+
+    const auto scaledBounds = [scale, offsetX, offsetY](int x, int y, int width, int height)
+    {
+        return juce::Rectangle<int>(juce::roundToInt(offsetX + static_cast<float>(x) * scale),
+                                    juce::roundToInt(offsetY + static_cast<float>(y) * scale),
+                                    juce::roundToInt(static_cast<float>(width) * scale),
+                                    juce::roundToInt(static_cast<float>(height) * scale));
+    };
+    presetLabel.setBounds(scaledBounds(330, 137, 56, 26));
+    presetLabel.setFont(juce::Font(8.5f * scale, juce::Font::bold));
+    presetSelector.setBounds(scaledBounds(390, 135, 270, 28));
+    presetSelector.setFont(juce::Font(10.0f * scale));
+    savePresetButton.setBounds(scaledBounds(670, 135, 112, 28));
+    presetNameEditor.setBounds(scaledBounds(390, 135, 194, 28));
+    presetNameEditor.setFont(juce::Font(10.0f * scale));
+    confirmPresetButton.setBounds(scaledBounds(590, 135, 78, 28));
+    cancelPresetButton.setBounds(scaledBounds(674, 135, 88, 28));
+}
+
+void AuraAudioProcessorEditor::refreshPresetMenu(int preferredItemID)
+{
+    presetSelector.clear(juce::dontSendNotification);
+    userPresetFiles.clear();
+
+    for (size_t index = 0; index < factoryPresets.size(); ++index)
+        presetSelector.addItem(factoryPresets[index].name, static_cast<int>(index) + 1);
+
+    auto presetDirectory = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                               .getChildFile("355ERA")
+                               .getChildFile("Aura")
+                               .getChildFile("Presets");
+    juce::Array<juce::File> foundFiles;
+    if (presetDirectory.isDirectory())
+        presetDirectory.findChildFiles(foundFiles, juce::File::findFiles, false, "*.aupreset");
+
+    std::vector<juce::File> files;
+    files.reserve(static_cast<size_t>(foundFiles.size()));
+    for (const auto& file : foundFiles)
+        files.push_back(file);
+    std::sort(files.begin(), files.end(), [](const juce::File& first, const juce::File& second)
+    {
+        return first.getFileNameWithoutExtension().compareNatural(second.getFileNameWithoutExtension()) < 0;
+    });
+
+    if (!files.isEmpty())
+        presetSelector.addSeparator();
+    for (const auto& file : files)
+    {
+        const auto itemID = userPresetStartID + static_cast<int>(userPresetFiles.size());
+        userPresetFiles.push_back(file);
+        presetSelector.addItem(file.getFileNameWithoutExtension(), itemID);
+    }
+
+    presetSelector.setSelectedId(preferredItemID, juce::dontSendNotification);
+}
+
+void AuraAudioProcessorEditor::setParameterFromPreset(const juce::String& parameterID, float value)
+{
+    if (auto* parameter = processor.getParameters().getParameter(parameterID))
+        parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
+}
+
+void AuraAudioProcessorEditor::loadSelectedPreset()
+{
+    const auto selectedID = presetSelector.getSelectedId();
+    if (selectedID >= 1 && selectedID <= static_cast<int>(factoryPresets.size()))
+    {
+        const auto& preset = factoryPresets[static_cast<size_t>(selectedID - 1)];
+        for (size_t index = 0; index < presetParameterIDs.size(); ++index)
+            setParameterFromPreset(presetParameterIDs[index], preset.values[index]);
+        return;
+    }
+
+    const auto fileIndex = selectedID - userPresetStartID;
+    if (fileIndex < 0 || fileIndex >= static_cast<int>(userPresetFiles.size()))
+        return;
+
+    const auto file = userPresetFiles[static_cast<size_t>(fileIndex)];
+    const auto xml = juce::XmlDocument::parse(file);
+    if (xml == nullptr)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Preset", "This preset file could not be read.");
+        return;
+    }
+
+    auto state = juce::ValueTree::fromXml(*xml);
+    if (!state.isValid() || state.getType() != processor.getParameters().state.getType())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Preset", "This file is not a valid Aura preset.");
+        return;
+    }
+
+    processor.getParameters().replaceState(state);
+}
+
+void AuraAudioProcessorEditor::beginSavingPreset()
+{
+    const auto selectedID = presetSelector.getSelectedId();
+    const auto selectedUserIndex = selectedID - userPresetStartID;
+    const auto initialName = selectedUserIndex >= 0
+                             && selectedUserIndex < static_cast<int>(userPresetFiles.size())
+                                 ? userPresetFiles[static_cast<size_t>(selectedUserIndex)]
+                                       .getFileNameWithoutExtension()
+                                 : juce::String{};
+    presetNameEditor.setText(initialName, juce::dontSendNotification);
+    presetSelector.setVisible(false);
+    savePresetButton.setVisible(false);
+    presetNameEditor.setVisible(true);
+    confirmPresetButton.setVisible(true);
+    cancelPresetButton.setVisible(true);
+    resized();
+    presetNameEditor.grabKeyboardFocus();
+    presetNameEditor.selectAll();
+}
+
+void AuraAudioProcessorEditor::savePresetFromEditor()
+{
+    auto name = presetNameEditor.getText().trim();
+    if (name.isEmpty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Preset", "Enter a name for this preset.");
+        return;
+    }
+
+    const auto directory = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                               .getChildFile("355ERA")
+                               .getChildFile("Aura")
+                               .getChildFile("Presets");
+    if (directory.createDirectory() != juce::Result::ok)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Preset", "Aura could not create its preset folder.");
+        return;
+    }
+
+    auto safeName = juce::File::createLegalFileName(name);
+    if (safeName.isEmpty())
+        safeName = "Aura Preset";
+    auto file = directory.getChildFile(safeName + ".aupreset");
+    const auto selectedID = presetSelector.getSelectedId();
+    const auto selectedUserIndex = selectedID - userPresetStartID;
+    const auto overwritingSelectedPreset = selectedUserIndex >= 0
+                                           && selectedUserIndex < static_cast<int>(userPresetFiles.size())
+                                           && userPresetFiles[static_cast<size_t>(selectedUserIndex)] == file;
+    for (int suffix = 2; file.existsAsFile() && !overwritingSelectedPreset; ++suffix)
+        file = directory.getChildFile(safeName + " (" + juce::String(suffix) + ").aupreset");
+
+    auto state = processor.getParameters().copyState();
+    state.setProperty("auraStateVersion", 2, nullptr);
+    state.setProperty("presetName", name, nullptr);
+    const auto xml = state.createXml();
+    if (xml == nullptr || !file.replaceWithText(xml->toString()))
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Preset", "Aura could not write this preset.");
+        return;
+    }
+
+    cancelSavingPreset();
+    refreshPresetMenu();
+    for (size_t index = 0; index < userPresetFiles.size(); ++index)
+    {
+        if (userPresetFiles[index] == file)
+        {
+            presetSelector.setSelectedId(userPresetStartID + static_cast<int>(index),
+                                         juce::dontSendNotification);
+            break;
+        }
+    }
+}
+
+void AuraAudioProcessorEditor::cancelSavingPreset()
+{
+    presetSelector.setVisible(true);
+    savePresetButton.setVisible(true);
+    presetNameEditor.setVisible(false);
+    confirmPresetButton.setVisible(false);
+    cancelPresetButton.setVisible(false);
+    resized();
 }
 
 void AuraAudioProcessorEditor::timerCallback()

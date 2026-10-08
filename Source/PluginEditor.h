@@ -2,6 +2,8 @@
 
 #include "PluginProcessor.h"
 
+#include <vector>
+
 class AuraLookAndFeel final : public juce::LookAndFeel_V4
 {
 public:
@@ -45,6 +47,12 @@ public:
 private:
     void timerCallback() override;
     void drawLilyVisualizer(juce::Graphics& graphics, juce::Point<float> centre, float level);
+    void refreshPresetMenu(int preferredItemID = 0);
+    void loadSelectedPreset();
+    void beginSavingPreset();
+    void savePresetFromEditor();
+    void cancelSavingPreset();
+    void setParameterFromPreset(const juce::String& parameterID, float value);
 
     AuraAudioProcessor& processor;
     AuraLookAndFeel lookAndFeel;
@@ -55,6 +63,13 @@ private:
     AuraDial grainSizeDial;
     AuraDial densityDial;
     AuraDial feedbackDial;
+    juce::Label presetLabel;
+    juce::ComboBox presetSelector;
+    juce::TextButton savePresetButton{ "SAVE PRESET" };
+    juce::TextEditor presetNameEditor;
+    juce::TextButton confirmPresetButton{ "SAVE" };
+    juce::TextButton cancelPresetButton{ "CANCEL" };
+    std::vector<juce::File> userPresetFiles;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AuraAudioProcessorEditor)
 };
