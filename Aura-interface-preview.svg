@@ -29,6 +29,12 @@
   <path d="M310 90 V548" stroke="#343849"/>
   <text x="330" y="111" class="mint caps" font-size="9" font-weight="700">SPECTRAL GARDEN</text>
   <text x="330" y="130" class="muted" font-size="9.5">Shift, bloom, then scatter the grains.</text>
+  <text x="330" y="153" class="muted caps" font-size="8" font-weight="700">PRESET</text>
+  <rect x="390" y="135" width="270" height="28" rx="5" fill="#1d2030" stroke="#343849"/>
+  <text x="402" y="153" class="cream" font-size="10">Choose preset</text>
+  <path d="M644 146l5 5 5-5" fill="none" stroke="#82eadc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="670" y="135" width="112" height="28" rx="5" fill="#82eadc"/>
+  <text x="726" y="153" fill="#090a10" font-size="8" font-weight="700" text-anchor="middle" letter-spacing=".7">SAVE PRESET</text>
   <g fill="url(#card)" stroke="#343849" stroke-opacity=".8">
     <rect x="322" y="170" width="150" height="151" rx="13"/><rect x="482" y="170" width="150" height="151" rx="13"/>
     <rect x="642" y="170" width="150" height="151" rx="13"/><rect x="802" y="170" width="150" height="151" rx="13"/>

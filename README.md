@@ -18,6 +18,10 @@ The processor uses a custom 2048-point radix-2 FFT and 4× overlap-add to form a
 
 The editor keeps its existing layout and can be resized proportionally from 780 × 465 to 1560 × 930, so the darker, Portal-inspired charcoal, orchid, and mint treatment, lily visualizer, labels, and controls scale together in hosts such as Ableton Live. Artwork uses vector paths and text instead of stretched bitmap UI, keeping edges and lettering clear at different sizes.
 
+## Presets
+
+Choose one of the factory presets from the **Preset** menu to load its settings. To save the current control values, click **Save Preset**, enter a name, then press **Save** (or Enter); press Escape or **Cancel** to leave without saving. Selecting a saved user preset and saving again with its existing name updates that file. A name already used by another preset is saved as a numbered copy rather than overwriting it. User presets are portable XML files (`.aupreset`) stored in the user's application data folder under `355ERA/Aura/Presets`; they remain available across sessions and are also stored inside the DAW project when the host saves Aura's state.
+
 ## Build on Windows
 
 Install Visual Studio 2022 (Desktop development with C++), CMake 3.22 or newer, and Git. From this folder run:
