@@ -413,7 +413,6 @@ void AuraAudioProcessorEditor::resized()
     presetLabel.setBounds(scaledBounds(330, 137, 56, 26));
     presetLabel.setFont(juce::Font(8.5f * scale, juce::Font::bold));
     presetSelector.setBounds(scaledBounds(390, 135, 270, 28));
-    presetSelector.setFont(juce::Font(10.0f * scale));
     savePresetButton.setBounds(scaledBounds(670, 135, 112, 28));
     presetNameEditor.setBounds(scaledBounds(390, 135, 194, 28));
     presetNameEditor.setFont(juce::Font(10.0f * scale));
@@ -446,7 +445,7 @@ void AuraAudioProcessorEditor::refreshPresetMenu(int preferredItemID)
         return first.getFileNameWithoutExtension().compareNatural(second.getFileNameWithoutExtension()) < 0;
     });
 
-    if (!files.isEmpty())
+    if (!files.empty())
         presetSelector.addSeparator();
     for (const auto& file : files)
     {
@@ -533,7 +532,7 @@ void AuraAudioProcessorEditor::savePresetFromEditor()
                                .getChildFile("355ERA")
                                .getChildFile("Aura")
                                .getChildFile("Presets");
-    if (directory.createDirectory() != juce::Result::ok)
+    if (directory.createDirectory().failed())
     {
         juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
                                                "Aura Preset", "Aura could not create its preset folder.");
