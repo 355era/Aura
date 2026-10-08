@@ -15,7 +15,7 @@ class AuraDial final : public juce::Component
 public:
     AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFeel& lookAndFeel,
              const juce::String& parameterID, const juce::String& title,
-             const juce::String& helper, bool isSemitoneControl, double defaultValue,
+             const juce::String& helper, double defaultValue,
              const juce::String& displayUnits = "%");
 
     void resized() override;
@@ -28,7 +28,6 @@ private:
     juce::Label valueLabel;
     juce::Label helperLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
-    bool displaysSemitones = false;
     juce::String units;
     float uiScale = 1.0f;
 };

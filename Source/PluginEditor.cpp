@@ -4,17 +4,17 @@
 
 namespace
 {
-const juce::Colour backgroundColour{ 0xff12171a };
-const juce::Colour panelColour{ 0xff26332e };
-const juce::Colour softLineColour{ 0xff485b53 };
-const juce::Colour leafColour{ 0xff82b49b };
-const juce::Colour brightLeafColour{ 0xffedf5e9 };
-const juce::Colour aquaColour{ 0xff9be3c1 };
-const juce::Colour mutedTextColour{ 0xffa2b4aa };
-const juce::Colour warmAccentColour{ 0xffffc895 };
-const juce::Colour lilyColour{ 0xffb689e7 };
-const juce::Colour lilyLightColour{ 0xfff1c8ed };
-const juce::Colour cardColour{ 0xff202b29 };
+const juce::Colour backgroundColour{ 0xff090a10 };
+const juce::Colour panelColour{ 0xff171925 };
+const juce::Colour softLineColour{ 0xff343849 };
+const juce::Colour leafColour{ 0xff70d7bb };
+const juce::Colour brightLeafColour{ 0xfff2f1ff };
+const juce::Colour aquaColour{ 0xff82eadc };
+const juce::Colour mutedTextColour{ 0xff9b9fb2 };
+const juce::Colour warmAccentColour{ 0xffff997f };
+const juce::Colour lilyColour{ 0xffa978ff };
+const juce::Colour lilyLightColour{ 0xffefb9f6 };
+const juce::Colour cardColour{ 0xff1d2030 };
 }
 
 void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, int width, int height,
@@ -54,9 +54,9 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
     }
 
     const auto innerRadius = radius * 0.74f;
-    graphics.setGradientFill(juce::ColourGradient(juce::Colour{ 0xff43594f },
+    graphics.setGradientFill(juce::ColourGradient(juce::Colour{ 0xff42455e },
                                                    centreX - innerRadius, centreY - innerRadius,
-                                                   juce::Colour{ 0xff26342f },
+                                                   juce::Colour{ 0xff191b27 },
                                                    centreX + innerRadius, centreY + innerRadius, false));
     graphics.fillEllipse(centreX - innerRadius, centreY - innerRadius,
                          innerRadius * 2.0f, innerRadius * 2.0f);
@@ -78,9 +78,9 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
 
 AuraDial::AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFeel& lookAndFeel,
                    const juce::String& parameterID, const juce::String& title,
-                   const juce::String& helper, bool isSemitoneControl, double defaultValue,
+                   const juce::String& helper, double defaultValue,
                    const juce::String& displayUnits)
-    : displaysSemitones(isSemitoneControl), units(displayUnits)
+    : units(displayUnits)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
@@ -135,11 +135,10 @@ void AuraDial::setScale(float scale)
 void AuraDial::refreshValue()
 {
     const auto value = slider.getValue();
-    if (displaysSemitones)
+    if (units == "Hz")
     {
-        const auto rounded = juce::roundToInt(value);
-        const auto sign = rounded > 0 ? "+" : "";
-        valueLabel.setText(sign + juce::String(rounded) + " st", juce::dontSendNotification);
+        const auto sign = value > 0.0 ? "+" : "";
+        valueLabel.setText(sign + juce::String(value, 1) + " Hz", juce::dontSendNotification);
     }
     else
     {
@@ -152,15 +151,15 @@ void AuraDial::refreshValue()
 AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProcessor)
     : AudioProcessorEditor(&audioProcessor),
       processor(audioProcessor),
-      shiftDial(audioProcessor.getParameters(), lookAndFeel, "shift", "Shift", "Semitones", true, 0.0),
-      mixDial(audioProcessor.getParameters(), lookAndFeel, "mix", "Mix", "Dry / wet", false, 100.0),
-      bloomDial(audioProcessor.getParameters(), lookAndFeel, "bloom", "Bloom", "Spectral density", false, 18.0),
-      grainDial(audioProcessor.getParameters(), lookAndFeel, "grain", "Grain", "Granular layer", false, 22.0),
-      grainSizeDial(audioProcessor.getParameters(), lookAndFeel, "grainsize", "Size", "Window length", false,
+      shiftDial(audioProcessor.getParameters(), lookAndFeel, "shift", "Shift", "Frequency offset", 0.0, "Hz"),
+      mixDial(audioProcessor.getParameters(), lookAndFeel, "mix", "Mix", "Dry / wet", 100.0),
+      bloomDial(audioProcessor.getParameters(), lookAndFeel, "bloom", "Bloom", "Spectral density", 18.0),
+      grainDial(audioProcessor.getParameters(), lookAndFeel, "grain", "Grain", "Granular layer", 22.0),
+      grainSizeDial(audioProcessor.getParameters(), lookAndFeel, "grainsize", "Size", "Window length",
                     120.0, "ms"),
-      densityDial(audioProcessor.getParameters(), lookAndFeel, "density", "Density", "Grains per sec", false,
+      densityDial(audioProcessor.getParameters(), lookAndFeel, "density", "Density", "Grains per sec",
                   12.0, "gr/s"),
-      feedbackDial(audioProcessor.getParameters(), lookAndFeel, "feedback", "Feedback", "Grain repeats", false,
+      feedbackDial(audioProcessor.getParameters(), lookAndFeel, "feedback", "Feedback", "Grain repeats",
                    18.0)
 {
     setOpaque(true);

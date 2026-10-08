@@ -24,8 +24,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout AuraAudioProcessor::createPa
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
     layout.add(std::make_unique<Parameter>(juce::ParameterID{ "shift", 1 }, "Shift",
-                                           juce::NormalisableRange<float>{ -24.0f, 24.0f, 1.0f },
-                                           0.0f, "st"));
+                                           juce::NormalisableRange<float>{ -1500.0f, 1500.0f, 0.1f },
+                                           0.0f, "Hz"));
     layout.add(std::make_unique<Parameter>(juce::ParameterID{ "mix", 1 }, "Mix",
                                            juce::NormalisableRange<float>{ 0.0f, 100.0f, 0.1f },
                                            100.0f, "%"));
@@ -50,15 +50,35 @@ juce::AudioProcessorValueTreeState::ParameterLayout AuraAudioProcessor::createPa
 void AuraAudioProcessor::prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock)
 {
     juce::ignoreUnused(maximumExpectedSamplesPerBlock);
+    const auto safeSampleRate = juce::jmax(8000.0, sampleRate);
     channelProcessors.clear();
     channelProcessors.resize(static_cast<size_t>(getTotalNumInputChannels()));
     for (auto& channel : channelProcessors)
-        channel.reset();
+        channel.prepare(safeSampleRate);
 
     grainProcessors.clear();
     grainProcessors.resize(static_cast<size_t>(getTotalNumInputChannels()));
     for (auto& channel : grainProcessors)
-        channel.prepare(sampleRate);
+        channel.prepare(safeSampleRate);
+
+    const auto prepareSmoother = [this, safeSampleRate](juce::SmoothedValue<float>& smoother,
+                                                   const juce::String& parameterID,
+                                                   float fallback, float scale)
+    {
+        const auto* parameter = parameters.getRawParameterValue(parameterID);
+        const auto initial = parameter != nullptr
+                                 ? parameter->load(std::memory_order_relaxed) * scale
+                                 : fallback;
+        smoother.reset(safeSampleRate, 0.04);
+        smoother.setCurrentAndTargetValue(initial);
+    };
+    prepareSmoother(shiftSmoother, "shift", 0.0f, 1.0f);
+    prepareSmoother(mixSmoother, "mix", 1.0f, 0.01f);
+    prepareSmoother(bloomSmoother, "bloom", 0.0f, 0.01f);
+    prepareSmoother(grainMixSmoother, "grain", 0.0f, 0.01f);
+    prepareSmoother(grainSizeSmoother, "grainsize", 120.0f, 1.0f);
+    prepareSmoother(densitySmoother, "density", 12.0f, 1.0f);
+    prepareSmoother(feedbackSmoother, "feedback", 0.0f, 0.01f);
 
     setLatencySamples(2048);
     inputMeter.store(0.0f, std::memory_order_relaxed);
@@ -110,24 +130,39 @@ void AuraAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
                               ? juce::jlimit(0.0f, 0.75f,
                                              feedbackParameter->load(std::memory_order_relaxed) * 0.01f)
                               : 0.0f;
-    const auto pitchRatio = std::pow(2.0f, shift / 12.0f);
+    shiftSmoother.setTargetValue(shift);
+    mixSmoother.setTargetValue(mix);
+    bloomSmoother.setTargetValue(bloom);
+    grainMixSmoother.setTargetValue(grainMix);
+    grainSizeSmoother.setTargetValue(grainSize);
+    densitySmoother.setTargetValue(density);
+    feedbackSmoother.setTargetValue(feedback);
 
     const auto channelsToProcess = juce::jmin(buffer.getNumChannels(), static_cast<int>(channelProcessors.size()));
     double inputSumSquares = 0.0;
-    for (int channelIndex = 0; channelIndex < channelsToProcess; ++channelIndex)
+    for (int sampleIndex = 0; sampleIndex < buffer.getNumSamples(); ++sampleIndex)
     {
-        auto* samples = buffer.getWritePointer(channelIndex);
-        auto& channel = channelProcessors[static_cast<size_t>(channelIndex)];
-        for (int sampleIndex = 0; sampleIndex < buffer.getNumSamples(); ++sampleIndex)
+        const auto shiftHz = shiftSmoother.getNextValue();
+        const auto currentMix = mixSmoother.getNextValue();
+        const auto currentBloom = bloomSmoother.getNextValue();
+        const auto currentGrainMix = grainMixSmoother.getNextValue();
+        const auto currentGrainSize = grainSizeSmoother.getNextValue();
+        const auto currentDensity = densitySmoother.getNextValue();
+        const auto currentFeedback = feedbackSmoother.getNextValue();
+        const auto grainPitchRatio = std::exp2(shiftHz / 1200.0f);
+
+        for (int channelIndex = 0; channelIndex < channelsToProcess; ++channelIndex)
         {
+            auto* samples = buffer.getWritePointer(channelIndex);
+            auto& channel = channelProcessors[static_cast<size_t>(channelIndex)];
             const auto input = samples[sampleIndex];
             inputSumSquares += static_cast<double>(input) * static_cast<double>(input);
             float delayedDry = 0.0f;
-            const auto spectralWet = channel.processSample(input, pitchRatio, bloom, delayedDry);
+            const auto spectralWet = channel.processSample(input, shiftHz, currentBloom, delayedDry);
             const auto grainWet = grainProcessors[static_cast<size_t>(channelIndex)].processSample(
-                spectralWet, pitchRatio, grainSize, density, feedback);
-            const auto processedWet = spectralWet + (grainWet - spectralWet) * grainMix;
-            const auto output = delayedDry + (processedWet - delayedDry) * mix;
+                spectralWet, grainPitchRatio, currentGrainSize, currentDensity, currentFeedback);
+            const auto processedWet = spectralWet + (grainWet - spectralWet) * currentGrainMix;
+            const auto output = delayedDry + (processedWet - delayedDry) * currentMix;
             samples[sampleIndex] = output;
         }
     }
@@ -150,7 +185,9 @@ double AuraAudioProcessor::getTailLengthSeconds() const
 
 void AuraAudioProcessor::getStateInformation(juce::MemoryBlock& destinationData)
 {
-    if (const auto xml = parameters.copyState().createXml())
+    auto state = parameters.copyState();
+    state.setProperty("auraStateVersion", 2, nullptr);
+    if (const auto xml = state.createXml())
         copyXmlToBinary(*xml, destinationData);
 }
 
@@ -160,13 +197,34 @@ void AuraAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
     {
         const auto restoredState = juce::ValueTree::fromXml(*xml);
         if (restoredState.isValid() && restoredState.getType() == parameters.state.getType())
+        {
+            // Older Aura projects stored the Shift dial as semitones. Convert that saved
+            // control value to the new 440 Hz-referenced spectral-frequency offset.
+            const auto stateVersion = static_cast<int>(restoredState.getProperty("auraStateVersion", 1));
+            if (stateVersion < 2)
+            {
+                auto oldShift = restoredState.getChildWithProperty("id", "shift");
+                if (oldShift.isValid())
+                {
+                    const auto semitones = static_cast<float>(oldShift.getProperty("value", 0.0f));
+                    const auto offsetHz = (std::exp2(semitones / 12.0f) - 1.0f) * 440.0f;
+                    oldShift.setProperty("value", juce::jlimit(-1500.0f, 1500.0f, offsetHz), nullptr);
+                }
+            }
             parameters.replaceState(restoredState);
+        }
     }
 }
 
 AuraAudioProcessor::SpectralChannel::SpectralChannel()
 {
     makeTables();
+}
+
+void AuraAudioProcessor::SpectralChannel::prepare(double sampleRate) noexcept
+{
+    currentSampleRate = juce::jmax(8000.0, sampleRate);
+    reset();
 }
 
 void AuraAudioProcessor::SpectralChannel::makeTables() noexcept
@@ -217,19 +275,18 @@ void AuraAudioProcessor::SpectralChannel::makeTables() noexcept
 void AuraAudioProcessor::SpectralChannel::reset() noexcept
 {
     inputRing.fill(0.0f);
+    shiftPhaseRing.fill(0.0);
     dryDelay.fill(0.0f);
     outputQueue.fill(0.0f);
     normalizationQueue.fill(0.0f);
-    previousInputPhase.fill(0.0f);
-    synthesisPhase.fill(0.0f);
     inputWritePosition = 0;
     dryWritePosition = 0;
     outputReadPosition = 0;
     samplesSeen = 0;
-    phaseInitialized = false;
+    shiftOscillatorPhase = 0.0;
 }
 
-float AuraAudioProcessor::SpectralChannel::processSample(float input, float pitchRatio,
+float AuraAudioProcessor::SpectralChannel::processSample(float input, float shiftHz,
                                                          float bloomAmount, float& delayedDry) noexcept
 {
     delayedDry = dryDelay[static_cast<size_t>(dryWritePosition)];
@@ -237,6 +294,11 @@ float AuraAudioProcessor::SpectralChannel::processSample(float input, float pitc
     dryWritePosition = (dryWritePosition + 1) & fftMask;
 
     inputRing[static_cast<size_t>(inputWritePosition)] = input;
+    shiftPhaseRing[static_cast<size_t>(inputWritePosition)] = shiftOscillatorPhase;
+    shiftOscillatorPhase = std::remainder(
+        shiftOscillatorPhase + 2.0 * juce::MathConstants<double>::pi
+                                * static_cast<double>(shiftHz) / currentSampleRate,
+        2.0 * juce::MathConstants<double>::pi);
     inputWritePosition = (inputWritePosition + 1) & fftMask;
 
     const auto queueIndex = static_cast<size_t>(outputReadPosition);
@@ -249,7 +311,7 @@ float AuraAudioProcessor::SpectralChannel::processSample(float input, float pitc
     if (samplesSeen >= static_cast<std::uint64_t>(fftSize)
         && (samplesSeen - static_cast<std::uint64_t>(fftSize)) % static_cast<std::uint64_t>(hopSize) == 0)
     {
-        processFrame(pitchRatio, bloomAmount);
+        processFrame(shiftHz, bloomAmount);
     }
 
     outputReadPosition = (outputReadPosition + 1) & outputQueueMask;
@@ -302,7 +364,7 @@ void AuraAudioProcessor::SpectralChannel::transform(bool inverse) noexcept
     }
 }
 
-void AuraAudioProcessor::SpectralChannel::processFrame(float pitchRatio, float bloomAmount) noexcept
+void AuraAudioProcessor::SpectralChannel::processFrame(float shiftHz, float bloomAmount) noexcept
 {
     for (int index = 0; index < fftSize; ++index)
     {
@@ -313,56 +375,15 @@ void AuraAudioProcessor::SpectralChannel::processFrame(float pitchRatio, float b
     }
 
     transform(false);
-    mappedSpectrum.fill(Complex{ 0.0f, 0.0f });
-
-    for (int sourceBin = 0; sourceBin <= halfFftSize; ++sourceBin)
-    {
-        const auto source = fftData[static_cast<size_t>(sourceBin)];
-        const auto sourceMagnitude = std::sqrt(source.real * source.real + source.imag * source.imag);
-        const auto inputPhase = std::atan2(source.imag, source.real);
-        const auto expectedAdvance = 2.0f * pi * static_cast<float>(sourceBin * hopSize)
-                                     / static_cast<float>(fftSize);
-        auto outputPhase = inputPhase;
-        if (phaseInitialized)
-        {
-            const auto phaseDifference = inputPhase - previousInputPhase[static_cast<size_t>(sourceBin)]
-                                         - expectedAdvance;
-            const auto residual = std::remainder(phaseDifference, 2.0f * pi);
-            synthesisPhase[static_cast<size_t>(sourceBin)] += (expectedAdvance + residual) * pitchRatio;
-            outputPhase = synthesisPhase[static_cast<size_t>(sourceBin)];
-        }
-        else
-        {
-            synthesisPhase[static_cast<size_t>(sourceBin)] = inputPhase;
-        }
-        previousInputPhase[static_cast<size_t>(sourceBin)] = inputPhase;
-
-        const auto targetPosition = static_cast<float>(sourceBin) * pitchRatio;
-        if (targetPosition > static_cast<float>(halfFftSize))
-            continue;
-
-        const auto lowerBin = static_cast<int>(targetPosition);
-        const auto fraction = targetPosition - static_cast<float>(lowerBin);
-        const Complex pitchedSource{ sourceMagnitude * std::cos(outputPhase),
-                                     sourceMagnitude * std::sin(outputPhase) };
-        const auto lowerWeight = 1.0f - fraction;
-        auto& lower = mappedSpectrum[static_cast<size_t>(lowerBin)];
-        lower.real += pitchedSource.real * lowerWeight;
-        lower.imag += pitchedSource.imag * lowerWeight;
-
-        const auto upperBin = lowerBin + 1;
-        if (upperBin <= halfFftSize)
-        {
-            auto& upper = mappedSpectrum[static_cast<size_t>(upperBin)];
-            upper.real += pitchedSource.real * fraction;
-            upper.imag += pitchedSource.imag * fraction;
-        }
-    }
-    phaseInitialized = true;
-
+    const auto sampleRate = static_cast<float>(currentSampleRate);
+    const auto nyquist = sampleRate * 0.5f;
     for (int bin = 0; bin <= halfFftSize; ++bin)
     {
-        const auto& value = mappedSpectrum[static_cast<size_t>(bin)];
+        auto value = fftData[static_cast<size_t>(bin)];
+        const auto sourceFrequency = static_cast<float>(bin) * sampleRate / static_cast<float>(fftSize);
+        if (shiftHz > 0.0f && sourceFrequency + shiftHz > nyquist)
+            value = { 0.0f, 0.0f };
+        mappedSpectrum[static_cast<size_t>(bin)] = value;
         magnitudes[static_cast<size_t>(bin)] = std::sqrt(value.real * value.real + value.imag * value.imag);
     }
 
@@ -373,7 +394,7 @@ void AuraAudioProcessor::SpectralChannel::processFrame(float pitchRatio, float b
         const auto rightMagnitude = magnitudes[static_cast<size_t>(juce::jmin(halfFftSize, bin + 1))];
         const auto softenedMagnitude = centerMagnitude * 0.5f + (leftMagnitude + rightMagnitude) * 0.25f;
         const auto targetMagnitude = centerMagnitude + (softenedMagnitude - centerMagnitude) * bloomAmount;
-        auto& value = mappedSpectrum[static_cast<size_t>(bin)];
+        auto value = mappedSpectrum[static_cast<size_t>(bin)];
         if (centerMagnitude > 1.0e-12f)
         {
             const auto scale = targetMagnitude / centerMagnitude;
@@ -394,24 +415,33 @@ void AuraAudioProcessor::SpectralChannel::processFrame(float pitchRatio, float b
                 value = { reference.real * scale, reference.imag * scale };
             }
         }
+        const auto sourceFrequency = static_cast<float>(bin) * sampleRate / static_cast<float>(fftSize);
+        if (shiftHz > 0.0f && sourceFrequency + shiftHz > nyquist)
+            value = { 0.0f, 0.0f };
+        if (bin > 0 && bin < halfFftSize)
+        {
+            value.real *= 2.0f;
+            value.imag *= 2.0f;
+        }
         fftData[static_cast<size_t>(bin)] = value;
+        if (bin > 0 && bin < halfFftSize)
+            fftData[static_cast<size_t>(fftSize - bin)] = { 0.0f, 0.0f };
     }
 
     fftData[0].imag = 0.0f;
     fftData[static_cast<size_t>(halfFftSize)].imag = 0.0f;
-    for (int bin = 1; bin < halfFftSize; ++bin)
-    {
-        const auto value = fftData[static_cast<size_t>(bin)];
-        fftData[static_cast<size_t>(fftSize - bin)] = { value.real, -value.imag };
-    }
-
     transform(true);
 
     for (int index = 0; index < fftSize; ++index)
     {
         const auto queueIndex = (outputReadPosition + 1 + index) & outputQueueMask;
+        const auto inputIndex = (inputWritePosition + index) & fftMask;
+        const auto phase = static_cast<float>(shiftPhaseRing[static_cast<size_t>(inputIndex)]);
+        const auto analyticSample = fftData[static_cast<size_t>(index)];
+        const auto shiftedSample = analyticSample.real * std::cos(phase)
+                                   - analyticSample.imag * std::sin(phase);
         outputQueue[static_cast<size_t>(queueIndex)] +=
-            fftData[static_cast<size_t>(index)].real * synthesisWindow[static_cast<size_t>(index)];
+            shiftedSample * synthesisWindow[static_cast<size_t>(index)];
         normalizationQueue[static_cast<size_t>(queueIndex)] +=
             analysisWindow[static_cast<size_t>(index)] * synthesisWindow[static_cast<size_t>(index)];
     }
@@ -497,9 +527,8 @@ float AuraAudioProcessor::GrainDelayChannel::processSample(float input, float pi
 
     const auto grainOutput = windowSum > 1.0e-5f ? grainSum / windowSum : 0.0f;
     const auto boundedFeedback = juce::jlimit(0.0f, 0.75f, feedback);
-    const auto writeSample = boundedFeedback > 0.0f
-                                 ? std::tanh(input + grainOutput * boundedFeedback)
-                                 : input;
+    const auto feedbackOnly = std::tanh(grainOutput) * boundedFeedback;
+    const auto writeSample = input + feedbackOnly;
     delayBuffer[static_cast<size_t>(writePosition)] = writeSample;
     if (++writePosition >= bufferSize)
         writePosition = 0;

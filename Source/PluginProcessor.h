@@ -45,8 +45,9 @@ private:
     {
     public:
         SpectralChannel();
+        void prepare(double sampleRate) noexcept;
         void reset() noexcept;
-        float processSample(float input, float pitchRatio, float bloomAmount, float& delayedDry) noexcept;
+        float processSample(float input, float shiftHz, float bloomAmount, float& delayedDry) noexcept;
 
     private:
         struct Complex
@@ -64,9 +65,10 @@ private:
 
         void makeTables() noexcept;
         void transform(bool inverse) noexcept;
-        void processFrame(float pitchRatio, float bloomAmount) noexcept;
+        void processFrame(float shiftHz, float bloomAmount) noexcept;
 
         std::array<float, fftSize> inputRing{};
+        std::array<double, fftSize> shiftPhaseRing{};
         std::array<float, fftSize> dryDelay{};
         std::array<float, outputQueueSize> outputQueue{};
         std::array<float, outputQueueSize> normalizationQueue{};
@@ -76,15 +78,14 @@ private:
         std::array<Complex, fftSize> mappedSpectrum{};
         std::array<Complex, halfFftSize> twiddles{};
         std::array<float, halfFftSize + 1> magnitudes{};
-        std::array<float, halfFftSize + 1> previousInputPhase{};
-        std::array<float, halfFftSize + 1> synthesisPhase{};
         std::array<std::uint16_t, fftSize> bitReversed{};
 
         int inputWritePosition = 0;
         int dryWritePosition = 0;
         int outputReadPosition = 0;
         std::uint64_t samplesSeen = 0;
-        bool phaseInitialized = false;
+        double currentSampleRate = 44100.0;
+        double shiftOscillatorPhase = 0.0;
     };
 
     class GrainDelayChannel
@@ -117,6 +118,13 @@ private:
     juce::AudioProcessorValueTreeState parameters;
     std::vector<SpectralChannel> channelProcessors;
     std::vector<GrainDelayChannel> grainProcessors;
+    juce::SmoothedValue<float> shiftSmoother;
+    juce::SmoothedValue<float> mixSmoother;
+    juce::SmoothedValue<float> bloomSmoother;
+    juce::SmoothedValue<float> grainMixSmoother;
+    juce::SmoothedValue<float> grainSizeSmoother;
+    juce::SmoothedValue<float> densitySmoother;
+    juce::SmoothedValue<float> feedbackSmoother;
     std::atomic<float> inputMeter{ 0.0f };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AuraAudioProcessor)
