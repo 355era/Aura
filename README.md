@@ -27,7 +27,7 @@ cmake -S . -B build -A x64
 cmake --build build --config Release --target Aura_VST3
 ```
 
-The VST3 bundle is created under `build/Aura_artefacts/Release/VST3/Aura.vst3`. Copy it to your DAW's VST3 folder or configure CMake to install it after building.
+The VST3 bundle is created under `build/Aura_artefacts/Release/VST3/Aura.vst3`. Copy it to your DAW's VST3 folder or configure CMake to install it after building. The macOS GitHub Actions artifact is built for Intel (x86_64); Apple Silicon users can run an Intel build of their DAW under Rosetta to load it.
 
 To launch the optional standalone build, build `Aura_Standalone` instead. It provides a convenient way to audition the effect outside a DAW.
 
@@ -49,7 +49,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release --target Aura_VST3
 ```
 
-CMake downloads the pinned JUCE 9.0.3 source on the first configure, so the first build needs network access. A GitHub Actions workflow is included to build the VST3 target on Windows, macOS, and Linux, then attach each platform's VST3 bundle to the workflow run as a downloadable artifact.
+CMake downloads the pinned JUCE 9.0.3 source on the first configure, so the first build needs network access. A GitHub Actions workflow is included to build the VST3 target on Windows, macOS Intel, and Linux, then attach each platform's VST3 bundle to the workflow run as a downloadable artifact.
 
 ## Add to GitHub
 
