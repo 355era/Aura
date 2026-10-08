@@ -6,34 +6,53 @@
 
 namespace
 {
-const juce::Colour backgroundColour{ 0xff090a10 };
-const juce::Colour panelColour{ 0xff171925 };
-const juce::Colour softLineColour{ 0xff343849 };
-const juce::Colour leafColour{ 0xff70d7bb };
-const juce::Colour brightLeafColour{ 0xfff2f1ff };
-const juce::Colour aquaColour{ 0xff82eadc };
-const juce::Colour mutedTextColour{ 0xff9b9fb2 };
-const juce::Colour warmAccentColour{ 0xffff997f };
-const juce::Colour lilyColour{ 0xffa978ff };
-const juce::Colour lilyLightColour{ 0xffefb9f6 };
-const juce::Colour cardColour{ 0xff1d2030 };
+const juce::Colour backgroundColour{ 0xff0b0c0e };
+const juce::Colour panelColour{ 0xff151719 };
+const juce::Colour softLineColour{ 0xff3c4143 };
+const juce::Colour leafColour{ 0xffc5c9c6 };
+const juce::Colour brightLeafColour{ 0xfff2f1ed };
+const juce::Colour aquaColour{ 0xfff06a55 };
+const juce::Colour mutedTextColour{ 0xff8f9494 };
+const juce::Colour warmAccentColour{ 0xfff04f3b };
+const juce::Colour lilyColour{ 0xfff04f3b };
+const juce::Colour lilyLightColour{ 0xffffb1a2 };
+const juce::Colour cardColour{ 0xffecebe6 };
+const juce::Colour cardTextColour{ 0xff25292a };
+
+juce::Font makeAuraFont(float height, bool bold = false)
+{
+    return juce::Font(juce::Font::getDefaultSansSerifFontName(), height,
+                      bold ? juce::Font::bold : juce::Font::plain);
+}
 
 struct FactoryPreset
 {
     const char* name;
-    std::array<float, 7> values;
+    std::array<float, 22> values;
 };
 
 constexpr std::array<FactoryPreset, 5> factoryPresets{{
-    { "Botanical Init", { 0.0f, 100.0f, 18.0f, 22.0f, 120.0f, 12.0f, 18.0f } },
-    { "Leaf Veil",      { 74.0f, 82.0f, 24.0f, 26.0f, 155.0f, 10.0f, 14.0f } },
-    { "Pollen Drift",   { 185.0f, 78.0f, 34.0f, 38.0f, 92.0f, 18.0f, 24.0f } },
-    { "Glass Orchid",   { -245.0f, 68.0f, 14.0f, 44.0f, 72.0f, 20.0f, 32.0f } },
-    { "Rain Memory",    { 38.0f, 90.0f, 42.0f, 52.0f, 215.0f, 7.0f, 48.0f } }
+    { "Botanical Init", { 0.0f, 100.0f, 18.0f, 12.0f, 20.0f, 20000.0f, 22.0f, 120.0f, 0.0f,
+                          12.0f, 18.0f, 18000.0f, 110.0f, 0.25f, 0.0f, 0.0f, 1.0f,
+                          1.0f, 1.0f, 1.0f, 0.0f, 0.0f } },
+    { "Leaf Veil", { 74.0f, 82.0f, 24.0f, 16.0f, 40.0f, 18000.0f, 26.0f, 155.0f, 0.0f,
+                     10.0f, 14.0f, 15500.0f, 120.0f, 0.18f, 0.12f, 0.0f, 1.0f,
+                     1.0f, 1.0f, 1.0f, -1.0f, 0.0f } },
+    { "Pollen Drift", { 185.0f, 78.0f, 34.0f, 28.0f, 90.0f, 16500.0f, 38.0f, 92.0f, 5.0f,
+                        18.0f, 24.0f, 12500.0f, 135.0f, 0.32f, 0.22f, 1.0f, 4.0f,
+                        1.0f, 1.0f, 1.0f, -1.0f, 1.0f } },
+    { "Glass Orchid", { -245.0f, 68.0f, 14.0f, 36.0f, 250.0f, 18000.0f, 44.0f, 72.0f, -7.0f,
+                        20.0f, 32.0f, 16500.0f, 125.0f, 0.12f, 0.18f, 2.0f, 1.0f,
+                        1.0f, 1.0f, 1.0f, -2.0f, 0.0f } },
+    { "Rain Memory", { 38.0f, 90.0f, 42.0f, 48.0f, 45.0f, 9500.0f, 52.0f, 215.0f, 0.0f,
+                       7.0f, 48.0f, 9000.0f, 145.0f, 0.08f, 0.3f, 5.0f, 8.0f,
+                       1.0f, 1.0f, 1.0f, -3.0f, 2.0f } }
 }};
 
-constexpr std::array<const char*, 7> presetParameterIDs{
-    "shift", "mix", "bloom", "grain", "grainsize", "density", "feedback"
+constexpr std::array<const char*, 22> presetParameterIDs{
+    "shift", "mix", "bloom", "blur", "lowcut", "highcut", "grain", "grainsize", "grainpitch",
+    "density", "feedback", "tone", "width", "lforate", "lfodepth", "lfoshape", "lfotarget",
+    "spectral_on", "grain_on", "tone_on", "output", "fft"
 };
 constexpr int userPresetStartID = 100;
 }
@@ -57,7 +76,7 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
     const auto angle = startAngle + sliderPosition * (endAngle - startAngle);
     juce::Path activeArc;
     activeArc.addCentredArc(centreX, centreY, radius, radius, 0.0f, startAngle, angle, true);
-    graphics.setColour(slider.isMouseOverOrDragging() ? brightLeafColour : aquaColour);
+    graphics.setColour(slider.isMouseOverOrDragging() ? warmAccentColour : aquaColour);
     graphics.strokePath(activeArc, juce::PathStrokeType(arcThickness, juce::PathStrokeType::curved,
                                                          juce::PathStrokeType::rounded));
 
@@ -75,13 +94,13 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
     }
 
     const auto innerRadius = radius * 0.74f;
-    graphics.setGradientFill(juce::ColourGradient(juce::Colour{ 0xff42455e },
+    graphics.setGradientFill(juce::ColourGradient(juce::Colour{ 0xfff8f7f2 },
                                                    centreX - innerRadius, centreY - innerRadius,
-                                                   juce::Colour{ 0xff191b27 },
+                                                   juce::Colour{ 0xffd5d7d2 },
                                                    centreX + innerRadius, centreY + innerRadius, false));
     graphics.fillEllipse(centreX - innerRadius, centreY - innerRadius,
                          innerRadius * 2.0f, innerRadius * 2.0f);
-    graphics.setColour(leafColour.withAlpha(0.26f));
+    graphics.setColour(softLineColour.withAlpha(0.34f));
     graphics.drawEllipse(centreX - innerRadius, centreY - innerRadius,
                          innerRadius * 2.0f, innerRadius * 2.0f, 1.0f);
 
@@ -90,7 +109,7 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
     pointer.startNewSubPath(centreX, centreY);
     pointer.lineTo(centreX + std::cos(angle) * pointerLength,
                    centreY + std::sin(angle) * pointerLength);
-    graphics.setColour(brightLeafColour);
+    graphics.setColour(cardTextColour);
     graphics.strokePath(pointer, juce::PathStrokeType(juce::jmax(1.2f, radius * 0.035f), juce::PathStrokeType::curved,
                                                        juce::PathStrokeType::rounded));
     graphics.setColour(warmAccentColour);
@@ -112,22 +131,23 @@ AuraDial::AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFe
     slider.setDoubleClickReturnValue(true, defaultValue);
     addAndMakeVisible(slider);
 
-    titleLabel.setText(title.toUpperCase(), juce::dontSendNotification);
+    titleLabel.setText(title, juce::dontSendNotification);
     titleLabel.setJustificationType(juce::Justification::centred);
-    titleLabel.setColour(juce::Label::textColourId, brightLeafColour);
-    titleLabel.setFont(juce::Font(12.0f, juce::Font::bold));
+    titleLabel.setColour(juce::Label::textColourId, cardTextColour);
+    titleLabel.setFont(makeAuraFont(12.0f, true));
     addAndMakeVisible(titleLabel);
 
     valueLabel.setJustificationType(juce::Justification::centred);
-    valueLabel.setColour(juce::Label::textColourId, brightLeafColour);
-    valueLabel.setFont(juce::Font(16.0f, juce::Font::bold));
+    valueLabel.setColour(juce::Label::textColourId, cardTextColour);
+    valueLabel.setFont(makeAuraFont(16.0f, true));
     addAndMakeVisible(valueLabel);
 
-    helperLabel.setText(helper.toUpperCase(), juce::dontSendNotification);
+    helperLabel.setText(helper, juce::dontSendNotification);
     helperLabel.setJustificationType(juce::Justification::centred);
-    helperLabel.setColour(juce::Label::textColourId, mutedTextColour);
-    helperLabel.setFont(juce::Font(9.0f));
+    helperLabel.setColour(juce::Label::textColourId, cardTextColour.withAlpha(0.64f));
+    helperLabel.setFont(makeAuraFont(9.5f));
     addAndMakeVisible(helperLabel);
+    setTooltip(title + ": " + helper);
 
     attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         parameters, parameterID, slider);
@@ -147,19 +167,41 @@ void AuraDial::resized()
 void AuraDial::setScale(float scale)
 {
     uiScale = juce::jlimit(0.7f, 1.5f, scale);
-    titleLabel.setFont(juce::Font(12.0f * uiScale, juce::Font::bold));
-    valueLabel.setFont(juce::Font(16.0f * uiScale, juce::Font::bold));
-    helperLabel.setFont(juce::Font(9.0f * uiScale));
+    titleLabel.setFont(makeAuraFont(12.0f * uiScale, true));
+    valueLabel.setFont(makeAuraFont(16.0f * uiScale, true));
+    helperLabel.setFont(makeAuraFont(9.5f * uiScale));
     resized();
 }
 
 void AuraDial::refreshValue()
 {
     const auto value = slider.getValue();
-    if (units == "Hz")
+    if (units == "shiftHz")
     {
         const auto sign = value > 0.0 ? "+" : "";
         valueLabel.setText(sign + juce::String(value, 1) + " Hz", juce::dontSendNotification);
+    }
+    else if (units == "Hz")
+    {
+        valueLabel.setText(juce::String(juce::roundToInt(value)) + " Hz", juce::dontSendNotification);
+    }
+    else if (units == "kHz")
+    {
+        valueLabel.setText(juce::String(value / 1000.0, 1) + " kHz", juce::dontSendNotification);
+    }
+    else if (units == "rate")
+    {
+        valueLabel.setText(juce::String(value, value < 1.0 ? 2 : 1) + " Hz", juce::dontSendNotification);
+    }
+    else if (units == "st")
+    {
+        const auto sign = value > 0.0 ? "+" : "";
+        valueLabel.setText(sign + juce::String(value, 1) + " st", juce::dontSendNotification);
+    }
+    else if (units == "dB")
+    {
+        const auto sign = value > 0.0 ? "+" : "";
+        valueLabel.setText(sign + juce::String(value, 1) + " dB", juce::dontSendNotification);
     }
     else
     {
@@ -169,19 +211,154 @@ void AuraDial::refreshValue()
     }
 }
 
+AuraGrainPad::AuraGrainPad(AuraAudioProcessor& audioProcessor) : processor(audioProcessor)
+{
+    setWantsKeyboardFocus(false);
+    setTooltip("Drag left or right to set spectral Shift; drag up or down to set Grain mix.");
+    startTimerHz(30);
+}
+
+void AuraGrainPad::resized()
+{
+}
+
+void AuraGrainPad::mouseDown(const juce::MouseEvent& event)
+{
+    updateFromPosition(event.position);
+}
+
+void AuraGrainPad::mouseDrag(const juce::MouseEvent& event)
+{
+    updateFromPosition(event.position);
+}
+
+void AuraGrainPad::updateFromPosition(juce::Point<float> position)
+{
+    const auto area = getLocalBounds().toFloat().reduced(18.0f, 26.0f);
+    const auto x = juce::jlimit(0.0f, 1.0f, (position.x - area.getX()) / area.getWidth());
+    const auto y = juce::jlimit(0.0f, 1.0f, (position.y - area.getY()) / area.getHeight());
+    auto& parameters = processor.getParameters();
+    if (auto* shift = parameters.getParameter("shift"))
+    {
+        const auto value = -1500.0f + x * 3000.0f;
+        shift->setValueNotifyingHost(shift->convertTo0to1(value));
+    }
+    if (auto* grain = parameters.getParameter("grain"))
+    {
+        const auto value = (1.0f - y) * 100.0f;
+        grain->setValueNotifyingHost(grain->convertTo0to1(value));
+    }
+}
+
+void AuraGrainPad::timerCallback()
+{
+    repaint();
+}
+
+void AuraGrainPad::paint(juce::Graphics& graphics)
+{
+    const auto bounds = getLocalBounds().toFloat();
+    const auto pad = bounds.reduced(1.0f);
+    graphics.setColour(panelColour);
+    graphics.fillRoundedRectangle(pad, 13.0f);
+    graphics.setColour(softLineColour);
+    graphics.drawRoundedRectangle(pad, 13.0f, 1.0f);
+
+    const auto area = bounds.reduced(18.0f, 26.0f);
+    graphics.setColour(softLineColour.withAlpha(0.62f));
+    for (int line = 1; line < 4; ++line)
+    {
+        const auto x = area.getX() + area.getWidth() * static_cast<float>(line) / 4.0f;
+        const auto y = area.getY() + area.getHeight() * static_cast<float>(line) / 4.0f;
+        graphics.drawLine(x, area.getY(), x, area.getBottom(), 0.7f);
+        graphics.drawLine(area.getX(), y, area.getRight(), y, 0.7f);
+    }
+
+    // A fine eight-petal contour gives the granular field a botanical identity
+    // without hiding the moving particles or the useful XY control area.
+    juce::Path flowerContour;
+    const auto flowerCentre = area.getCentre();
+    const auto flowerRadius = juce::jmin(area.getWidth(), area.getHeight()) * 0.42f;
+    for (int point = 0; point <= 192; ++point)
+    {
+        const auto angle = juce::MathConstants<float>::twoPi * static_cast<float>(point) / 192.0f;
+        const auto radius = flowerRadius * (0.78f + 0.22f * std::cos(8.0f * angle));
+        const juce::Point<float> vertex{ flowerCentre.x + std::cos(angle) * radius,
+                                         flowerCentre.y + std::sin(angle) * radius };
+        if (point == 0)
+            flowerContour.startNewSubPath(vertex);
+        else
+            flowerContour.lineTo(vertex);
+    }
+    flowerContour.closeSubPath();
+    graphics.setColour(lilyColour.withAlpha(0.045f));
+    graphics.fillPath(flowerContour);
+    graphics.setColour(lilyLightColour.withAlpha(0.34f));
+    graphics.strokePath(flowerContour, juce::PathStrokeType(0.9f));
+
+    const auto* shiftParameter = processor.getParameters().getRawParameterValue("shift");
+    const auto* grainParameter = processor.getParameters().getRawParameterValue("grain");
+    const auto shift = shiftParameter != nullptr ? shiftParameter->load(std::memory_order_relaxed) : 0.0f;
+    const auto grain = grainParameter != nullptr ? grainParameter->load(std::memory_order_relaxed) : 0.0f;
+    const auto markerX = area.getX() + juce::jmap(shift, -1500.0f, 1500.0f, 0.0f, area.getWidth());
+    const auto markerY = area.getBottom() - juce::jlimit(0.0f, 100.0f, grain) * 0.01f * area.getHeight();
+    const auto lfo = processor.getLfoValue();
+    const auto level = juce::jlimit(0.0f, 1.0f, processor.getInputLevel() * 5.0f);
+    const auto phase = processor.getLfoPhase();
+    for (int particle = 0; particle < 34; ++particle)
+    {
+        const auto seed = static_cast<float>(particle) * 0.6180339f;
+        const auto x = area.getX() + std::fmod(seed + phase * (0.08f + level * 0.35f), 1.0f) * area.getWidth();
+        const auto y = area.getY() + (0.5f + 0.43f * std::sin(seed * 6.2831853f + phase * 6.2831853f + lfo))
+                                      * area.getHeight();
+        const auto distance = std::hypot(x - markerX, y - markerY);
+        const auto glow = juce::jlimit(0.18f, 0.85f, 0.75f - distance / (area.getWidth() + area.getHeight()));
+        const auto size = 1.4f + level * 2.0f + (particle % 5 == 0 ? 1.0f : 0.0f);
+        graphics.setColour((particle % 4 == 0 ? lilyLightColour : warmAccentColour).withAlpha(glow));
+        graphics.fillEllipse(x - size * 0.5f, y - size * 0.5f, size, size);
+    }
+
+    graphics.setColour(warmAccentColour.withAlpha(0.2f));
+    graphics.fillEllipse(markerX - 11.0f, markerY - 11.0f, 22.0f, 22.0f);
+    graphics.setColour(warmAccentColour);
+    graphics.drawEllipse(markerX - 6.0f, markerY - 6.0f, 12.0f, 12.0f, 1.7f);
+    graphics.fillEllipse(markerX - 2.0f, markerY - 2.0f, 4.0f, 4.0f);
+
+    graphics.setColour(brightLeafColour);
+    graphics.setFont(makeAuraFont(9.0f, true));
+    graphics.drawText("GRAIN FIELD  ·  SHIFT / GRAIN", 12, 7, getWidth() - 24, 15,
+                      juce::Justification::centredLeft);
+    graphics.setColour(mutedTextColour);
+    graphics.setFont(makeAuraFont(8.0f));
+    graphics.drawText("SHIFT (Hz)", 18, getHeight() - 16, 66, 12, juce::Justification::centredLeft);
+    graphics.drawText("GRAIN MIX", getWidth() - 86, getHeight() - 16, 68, 12,
+                      juce::Justification::centredRight);
+}
+
 AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProcessor)
     : AudioProcessorEditor(&audioProcessor),
       processor(audioProcessor),
-      shiftDial(audioProcessor.getParameters(), lookAndFeel, "shift", "Shift", "Frequency offset", 0.0, "Hz"),
-      mixDial(audioProcessor.getParameters(), lookAndFeel, "mix", "Mix", "Dry / wet", 100.0),
-      bloomDial(audioProcessor.getParameters(), lookAndFeel, "bloom", "Bloom", "Spectral density", 18.0),
-      grainDial(audioProcessor.getParameters(), lookAndFeel, "grain", "Grain", "Granular layer", 22.0),
-      grainSizeDial(audioProcessor.getParameters(), lookAndFeel, "grainsize", "Size", "Window length",
+    shiftDial(audioProcessor.getParameters(), lookAndFeel, "shift", "Shift", "Spectral frequency offset", 0.0, "shiftHz"),
+      mixDial(audioProcessor.getParameters(), lookAndFeel, "mix", "Mix", "Dry and processed level", 100.0),
+      bloomDial(audioProcessor.getParameters(), lookAndFeel, "bloom", "Bloom", "Adds neighboring spectral energy", 18.0),
+      blurDial(audioProcessor.getParameters(), lookAndFeel, "blur", "Blur", "Smooths nearby bins", 12.0),
+      lowCutDial(audioProcessor.getParameters(), lookAndFeel, "lowcut", "Low cut", "Lowest shifted frequency", 20.0, "Hz"),
+      highCutDial(audioProcessor.getParameters(), lookAndFeel, "highcut", "High cut", "Highest shifted frequency", 20000.0, "kHz"),
+      grainDial(audioProcessor.getParameters(), lookAndFeel, "grain", "Grain mix", "Granular layer level", 22.0),
+      grainSizeDial(audioProcessor.getParameters(), lookAndFeel, "grainsize", "Grain size", "Length of each grain",
                     120.0, "ms"),
-      densityDial(audioProcessor.getParameters(), lookAndFeel, "density", "Density", "Grains per sec",
+      grainPitchDial(audioProcessor.getParameters(), lookAndFeel, "grainpitch", "Grain pitch", "Pitch per grain",
+                     0.0, "st"),
+      densityDial(audioProcessor.getParameters(), lookAndFeel, "density", "Density", "Grains per second",
                   12.0, "gr/s"),
-      feedbackDial(audioProcessor.getParameters(), lookAndFeel, "feedback", "Feedback", "Grain repeats",
-                   18.0)
+      feedbackDial(audioProcessor.getParameters(), lookAndFeel, "feedback", "Feedback", "Amount recirculated",
+                   18.0),
+      toneDial(audioProcessor.getParameters(), lookAndFeel, "tone", "Tone", "Low-pass cutoff", 18000.0, "kHz"),
+      widthDial(audioProcessor.getParameters(), lookAndFeel, "width", "Stereo width", "Width of the stereo image", 110.0),
+      lfoRateDial(audioProcessor.getParameters(), lookAndFeel, "lforate", "Rate", "LFO cycles per second", 0.25, "rate"),
+      lfoDepthDial(audioProcessor.getParameters(), lookAndFeel, "lfodepth", "Depth", "LFO modulation amount", 0.0),
+      outputDial(audioProcessor.getParameters(), lookAndFeel, "output", "Output", "Final output level", 0.0, "dB"),
+      grainPad(audioProcessor)
 {
     setOpaque(true);
     setBufferedToImage(false);
@@ -192,10 +369,81 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     addAndMakeVisible(shiftDial);
     addAndMakeVisible(mixDial);
     addAndMakeVisible(bloomDial);
+    addAndMakeVisible(blurDial);
+    addAndMakeVisible(lowCutDial);
+    addAndMakeVisible(highCutDial);
     addAndMakeVisible(grainDial);
     addAndMakeVisible(grainSizeDial);
+    addAndMakeVisible(grainPitchDial);
     addAndMakeVisible(densityDial);
     addAndMakeVisible(feedbackDial);
+    addAndMakeVisible(toneDial);
+    addAndMakeVisible(widthDial);
+    addAndMakeVisible(lfoRateDial);
+    addAndMakeVisible(lfoDepthDial);
+    addAndMakeVisible(outputDial);
+    addAndMakeVisible(grainPad);
+
+    const auto setupTab = [this](juce::TextButton& button, const juce::String& label, Page page)
+    {
+        button.setButtonText(label);
+        button.setFont(makeAuraFont(10.0f, true));
+        button.setColour(juce::TextButton::buttonColourId, panelColour);
+        button.setColour(juce::TextButton::buttonOnColourId, warmAccentColour);
+        button.setColour(juce::TextButton::textColourOffId, mutedTextColour);
+        button.setColour(juce::TextButton::textColourOnId, brightLeafColour);
+        button.setClickingTogglesState(true);
+        button.onClick = [this, page] { setActivePage(page); };
+        addAndMakeVisible(button);
+    };
+    setupTab(spectralTab, "SPECTRAL", Page::spectral);
+    setupTab(grainTab, "GRAIN", Page::grain);
+    setupTab(modulationTab, "MOD", Page::modulation);
+    setupTab(settingsTab, "SETTINGS", Page::settings);
+
+    fftSelector.addItem("2048", 1);
+    fftSelector.addItem("4096", 2);
+    fftSelector.addItem("8192", 3);
+    lfoShapeSelector.addItemList({ "Sine", "Triangle", "Saw Up", "Saw Down", "Square", "Random Hold" }, 1);
+    lfoTargetSelector.addItemList({ "Off", "Shift", "Bloom", "Blur", "Grain", "Pitch", "Size", "Density",
+                                    "Feedback", "Tone", "Width" }, 1);
+    const auto styleCombo = [](juce::ComboBox& combo)
+    {
+        combo.setFont(makeAuraFont(11.0f));
+        combo.setColour(juce::ComboBox::backgroundColourId, cardColour);
+        combo.setColour(juce::ComboBox::textColourId, cardTextColour);
+        combo.setColour(juce::ComboBox::arrowColourId, warmAccentColour);
+        combo.setColour(juce::ComboBox::outlineColourId, softLineColour.withAlpha(0.35f));
+    };
+    styleCombo(fftSelector);
+    styleCombo(lfoShapeSelector);
+    styleCombo(lfoTargetSelector);
+    addAndMakeVisible(fftSelector);
+    addAndMakeVisible(lfoShapeSelector);
+    addAndMakeVisible(lfoTargetSelector);
+    fftAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.getParameters(), "fft", fftSelector);
+    lfoShapeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.getParameters(), "lfoshape", lfoShapeSelector);
+    lfoTargetAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(
+        audioProcessor.getParameters(), "lfotarget", lfoTargetSelector);
+
+    const auto styleToggle = [this](juce::ToggleButton& button)
+    {
+        button.setColour(juce::ToggleButton::textColourId, cardTextColour);
+        button.setColour(juce::ToggleButton::tickColourId, warmAccentColour);
+        button.setColour(juce::ToggleButton::tickDisabledColourId, softLineColour);
+        addAndMakeVisible(button);
+    };
+    styleToggle(spectralEnableButton);
+    styleToggle(grainEnableButton);
+    styleToggle(toneEnableButton);
+    spectralEnableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+        audioProcessor.getParameters(), "spectral_on", spectralEnableButton);
+    grainEnableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+        audioProcessor.getParameters(), "grain_on", grainEnableButton);
+    toneEnableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+        audioProcessor.getParameters(), "tone_on", toneEnableButton);
 
     presetLabel.setText("PRESET", juce::dontSendNotification);
     presetLabel.setColour(juce::Label::textColourId, mutedTextColour);
@@ -204,21 +452,40 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
 
     presetSelector.setTextWhenNothingSelected("Choose preset");
     presetSelector.setColour(juce::ComboBox::backgroundColourId, cardColour);
-    presetSelector.setColour(juce::ComboBox::textColourId, brightLeafColour);
+    presetSelector.setColour(juce::ComboBox::textColourId, cardTextColour);
     presetSelector.setColour(juce::ComboBox::arrowColourId, aquaColour);
     presetSelector.setColour(juce::ComboBox::outlineColourId, softLineColour);
     presetSelector.onChange = [this] { loadSelectedPreset(); };
     addAndMakeVisible(presetSelector);
 
-    savePresetButton.setColour(juce::TextButton::buttonColourId, aquaColour);
-    savePresetButton.setColour(juce::TextButton::buttonOnColourId, leafColour);
-    savePresetButton.setColour(juce::TextButton::textColourOffId, backgroundColour);
-    savePresetButton.setColour(juce::TextButton::textColourOnId, backgroundColour);
+    savePresetButton.setColour(juce::TextButton::buttonColourId, warmAccentColour);
+    savePresetButton.setColour(juce::TextButton::buttonOnColourId, warmAccentColour.brighter(0.12f));
+    savePresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
+    savePresetButton.setColour(juce::TextButton::textColourOnId, brightLeafColour);
+    savePresetButton.setButtonText("Save preset");
+    savePresetButton.setFont(makeAuraFont(10.0f, true));
     savePresetButton.onClick = [this] { beginSavingPreset(); };
     addAndMakeVisible(savePresetButton);
 
+    const auto styleBankButton = [this](juce::TextButton& button, const juce::String& text)
+    {
+        button.setButtonText(text);
+        button.setFont(makeAuraFont(10.0f, true));
+        button.setColour(juce::TextButton::buttonColourId, panelColour.brighter(0.08f));
+        button.setColour(juce::TextButton::buttonOnColourId, panelColour.brighter(0.16f));
+        button.setColour(juce::TextButton::textColourOffId, brightLeafColour);
+        button.setColour(juce::TextButton::textColourOnId, brightLeafColour);
+        addAndMakeVisible(button);
+    };
+    styleBankButton(loadBankButton, "Load bank");
+    loadBankButton.setTooltip("Import an Aura preset bank (.aubank) or a single preset (.aupreset)");
+    loadBankButton.onClick = [this] { importPresetBank(); };
+    styleBankButton(saveBankButton, "Save bank");
+    saveBankButton.setTooltip("Export your saved Aura presets as a shareable .aubank file");
+    saveBankButton.onClick = [this] { exportPresetBank(); };
+
     presetNameEditor.setColour(juce::TextEditor::backgroundColourId, cardColour);
-    presetNameEditor.setColour(juce::TextEditor::textColourId, brightLeafColour);
+    presetNameEditor.setColour(juce::TextEditor::textColourId, cardTextColour);
     presetNameEditor.setColour(juce::TextEditor::outlineColourId, softLineColour);
     presetNameEditor.setColour(juce::TextEditor::focusedOutlineColourId, aquaColour);
     presetNameEditor.setTextToShowWhenEmpty("Name your preset", mutedTextColour);
@@ -228,19 +495,22 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     addAndMakeVisible(presetNameEditor);
     presetNameEditor.setVisible(false);
 
-    confirmPresetButton.setColour(juce::TextButton::buttonColourId, aquaColour);
-    confirmPresetButton.setColour(juce::TextButton::textColourOffId, backgroundColour);
+    confirmPresetButton.setColour(juce::TextButton::buttonColourId, warmAccentColour);
+    confirmPresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
+    confirmPresetButton.setFont(makeAuraFont(10.0f, true));
     confirmPresetButton.onClick = [this] { savePresetFromEditor(); };
     addAndMakeVisible(confirmPresetButton);
     confirmPresetButton.setVisible(false);
 
-    cancelPresetButton.setColour(juce::TextButton::buttonColourId, cardColour);
+    cancelPresetButton.setColour(juce::TextButton::buttonColourId, softLineColour);
     cancelPresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
+    cancelPresetButton.setFont(makeAuraFont(10.0f, true));
     cancelPresetButton.onClick = [this] { cancelSavingPreset(); };
     addAndMakeVisible(cancelPresetButton);
     cancelPresetButton.setVisible(false);
 
     refreshPresetMenu();
+    setActivePage(Page::spectral);
     startTimerHz(30);
 }
 
@@ -250,10 +520,19 @@ AuraAudioProcessorEditor::~AuraAudioProcessorEditor()
     shiftDial.setLookAndFeel(nullptr);
     mixDial.setLookAndFeel(nullptr);
     bloomDial.setLookAndFeel(nullptr);
+    blurDial.setLookAndFeel(nullptr);
+    lowCutDial.setLookAndFeel(nullptr);
+    highCutDial.setLookAndFeel(nullptr);
     grainDial.setLookAndFeel(nullptr);
     grainSizeDial.setLookAndFeel(nullptr);
+    grainPitchDial.setLookAndFeel(nullptr);
     densityDial.setLookAndFeel(nullptr);
     feedbackDial.setLookAndFeel(nullptr);
+    toneDial.setLookAndFeel(nullptr);
+    widthDial.setLookAndFeel(nullptr);
+    lfoRateDial.setLookAndFeel(nullptr);
+    lfoDepthDial.setLookAndFeel(nullptr);
+    outputDial.setLookAndFeel(nullptr);
 }
 
 void AuraAudioProcessorEditor::paint(juce::Graphics& graphics)
@@ -270,105 +549,176 @@ void AuraAudioProcessorEditor::paint(juce::Graphics& graphics)
 
     const juce::Rectangle<float> designBounds{0.0f, 0.0f, designWidth, designHeight};
     const auto panelBounds = designBounds.reduced(8.0f);
-    graphics.setGradientFill(juce::ColourGradient(panelColour, panelBounds.getX(), panelBounds.getY(),
-                                                   backgroundColour, panelBounds.getRight(),
-                                                   panelBounds.getBottom(), false));
-    graphics.fillRoundedRectangle(panelBounds, 23.0f);
+    graphics.setColour(panelColour);
+    graphics.fillRoundedRectangle(panelBounds, 18.0f);
     graphics.setColour(softLineColour.withAlpha(0.78f));
-    graphics.drawRoundedRectangle(panelBounds, 23.0f, 1.0f);
+    graphics.drawRoundedRectangle(panelBounds, 18.0f, 1.0f);
 
-    // Fine seed-like marks give the dark field a little depth without competing with the controls.
-    graphics.setColour(leafColour.withAlpha(0.10f));
-    for (int row = 0; row < 8; ++row)
-    {
-        for (int column = 0; column < 15; ++column)
-        {
-            const auto x = 34.0f + static_cast<float>(column) * 58.0f + static_cast<float>(row % 2) * 25.0f;
-            const auto y = 93.0f + static_cast<float>(row) * 49.0f;
-            if (x < designWidth - 18.0f && y < designHeight - 34.0f)
-                graphics.fillEllipse(x, y, 1.5f, 1.5f);
-        }
-    }
-
-    // Header mark: a small stem with two leaves.
-    juce::Path stem;
-    stem.startNewSubPath(31.0f, 43.0f);
-    stem.cubicTo(34.0f, 35.0f, 36.0f, 31.0f, 42.0f, 26.0f);
-    stem.cubicTo(42.0f, 34.0f, 40.0f, 39.0f, 31.0f, 43.0f);
-    graphics.setColour(leafColour);
-    graphics.strokePath(stem, juce::PathStrokeType(1.5f, juce::PathStrokeType::curved,
-                                                    juce::PathStrokeType::rounded));
-    juce::Path leaf;
-    leaf.startNewSubPath(37.0f, 35.0f);
-    leaf.cubicTo(36.0f, 28.0f, 29.0f, 27.0f, 26.0f, 28.0f);
-    leaf.cubicTo(27.0f, 35.0f, 31.0f, 38.0f, 37.0f, 35.0f);
-    graphics.strokePath(leaf, juce::PathStrokeType(1.3f, juce::PathStrokeType::curved,
-                                                    juce::PathStrokeType::rounded));
-
+    graphics.setColour(warmAccentColour);
+    graphics.fillEllipse(30.0f, 29.0f, 20.0f, 20.0f);
     graphics.setColour(brightLeafColour);
-    graphics.setFont(juce::Font(13.0f, juce::Font::bold));
-    graphics.drawText("355ERA", 53, 27, 90, 23, juce::Justification::centredLeft);
+    graphics.setFont(makeAuraFont(13.0f, true));
+    graphics.drawText("355ERA", 61, 26, 90, 23, juce::Justification::centredLeft);
     graphics.setColour(mutedTextColour);
-    graphics.setFont(juce::Font(9.0f));
-    graphics.drawText("BOTANICAL SOUND OBJECTS", 145, 28, 260, 22, juce::Justification::centredLeft);
+    graphics.setFont(makeAuraFont(9.0f));
+    graphics.drawText("AURA  /  SPECTRAL TEXTURE PROCESSOR", 159, 28, 330, 20,
+                      juce::Justification::centredLeft);
 
     graphics.setColour(softLineColour);
     graphics.drawLine(28.0f, 62.0f, designWidth - 28.0f, 62.0f, 1.0f);
-    graphics.setColour(warmAccentColour.withAlpha(0.85f));
-    graphics.fillEllipse(designWidth - 174.0f, 33.0f, 6.0f, 6.0f);
-    graphics.setColour(mutedTextColour);
-    graphics.setFont(juce::Font(9.0f));
-    graphics.drawText("FFT + GRAIN ENGINE", 850, 26, 158, 20,
-                      juce::Justification::centredRight);
-
     graphics.setColour(brightLeafColour);
-    graphics.setFont(juce::Font(46.0f, juce::Font::bold));
-    graphics.drawText("AURA", 38, 90, 248, 58, juce::Justification::centredLeft);
+    graphics.setFont(makeAuraFont(36.0f, true));
+    graphics.drawText("AURA", 36, 84, 250, 48, juce::Justification::centredLeft);
     graphics.setColour(aquaColour);
-    graphics.setFont(juce::Font(10.0f, juce::Font::bold));
-    graphics.drawText("SPECTRAL GRAIN SHIFTER", 42, 148, 252, 20, juce::Justification::centredLeft);
+    graphics.setFont(makeAuraFont(10.0f, true));
+    graphics.drawText("SPECTRAL SHIFTER", 39, 132, 252, 18, juce::Justification::centredLeft);
     graphics.setColour(mutedTextColour);
-    graphics.setFont(juce::Font(11.0f));
-    graphics.drawText("Refract a sound into new growth.", 42, 171, 252, 22,
+    graphics.setFont(makeAuraFont(10.0f));
+    graphics.drawText("Shift  ·  Scatter  ·  Shape", 39, 151, 252, 18,
                       juce::Justification::centredLeft);
 
     graphics.setColour(softLineColour.withAlpha(0.9f));
-    graphics.drawLine(310.0f, 90.0f, 310.0f, 548.0f, 1.0f);
+    graphics.drawLine(306.0f, 76.0f, 306.0f, 550.0f, 1.0f);
     graphics.setColour(aquaColour);
-    graphics.setFont(juce::Font(9.0f, juce::Font::bold));
-    graphics.drawText("SPECTRAL GARDEN", 330, 98, 200, 18, juce::Justification::centredLeft);
+    graphics.setFont(makeAuraFont(11.0f, true));
+    juce::String pageTitle;
+    juce::String pageDescription;
+    switch (activePage)
+    {
+        case Page::spectral:
+            pageTitle = "SPECTRAL ENGINE";
+            pageDescription = "Frequency shift, spectral density and band shaping";
+            break;
+        case Page::grain:
+            pageTitle = "GRAIN LAYER";
+            pageDescription = "Pitch, window, density and controlled feedback";
+            break;
+        case Page::modulation:
+            pageTitle = "MODULATION";
+            pageDescription = "Animate a selected parameter with the internal LFO";
+            break;
+        case Page::settings:
+            pageTitle = "GLOBAL SETTINGS";
+            pageDescription = "Resolution, effect routing and output level";
+            break;
+    }
+    graphics.drawText(pageTitle, 322, 107, 300, 18, juce::Justification::centredLeft);
     graphics.setColour(mutedTextColour);
-    graphics.setFont(juce::Font(9.0f));
-    graphics.drawText("Shift, bloom, then scatter the grains.", 330, 116, 360, 18,
+    graphics.setFont(makeAuraFont(9.0f));
+    graphics.drawText(pageDescription, 322, 124, 460, 18,
                       juce::Justification::centredLeft);
 
-    const auto drawControlCard = [&graphics](float x, float y, float width)
+    const auto drawControlCard = [&graphics](float x, float y, float width, float height = 151.0f)
     {
-        const juce::Rectangle<float> card{x, y, width, 151.0f};
-        graphics.setColour(cardColour.withAlpha(0.86f));
-        graphics.fillRoundedRectangle(card, 13.0f);
-        graphics.setColour(softLineColour.withAlpha(0.68f));
-        graphics.drawRoundedRectangle(card, 13.0f, 1.0f);
+        const juce::Rectangle<float> card{x, y, width, height};
+        graphics.setColour(cardColour);
+        graphics.fillRoundedRectangle(card, 9.0f);
+        graphics.setColour(softLineColour.withAlpha(0.35f));
+        graphics.drawRoundedRectangle(card, 10.0f, 1.0f);
     };
-    for (int column = 0; column < 4; ++column)
-        drawControlCard(322.0f + static_cast<float>(column) * 160.0f, 170.0f, 150.0f);
-    for (int column = 0; column < 3; ++column)
-        drawControlCard(402.0f + static_cast<float>(column) * 160.0f, 333.0f, 150.0f);
-
-    drawLilyVisualizer(graphics, { 166.0f, 316.0f }, processor.getInputLevel());
-    graphics.setColour(mutedTextColour);
-    graphics.setFont(juce::Font(8.5f, juce::Font::bold));
-    graphics.drawText("LIVE LEVEL", 97, 423, 138, 16, juce::Justification::centred);
+    if (activePage == Page::spectral)
+    {
+        for (int row = 0; row < 2; ++row)
+            for (int column = 0; column < 4; ++column)
+                drawControlCard(322.0f + static_cast<float>(column) * 160.0f,
+                                170.0f + static_cast<float>(row) * 163.0f, 150.0f);
+    }
+    else if (activePage == Page::grain)
+    {
+        for (int column = 0; column < 5; ++column)
+            drawControlCard(322.0f + static_cast<float>(column) * 136.0f, 170.0f, 128.0f);
+        drawControlCard(322.0f, 333.0f, 672.0f, 151.0f);
+        graphics.setColour(cardTextColour.withAlpha(0.7f));
+        graphics.setFont(makeAuraFont(9.0f));
+        graphics.drawText("A bounded feedback loop keeps repeating grains smooth as density and pitch change.",
+                          346, 390, 620, 36, juce::Justification::centredLeft);
+    }
+    else if (activePage == Page::modulation)
+    {
+        drawControlCard(322.0f, 170.0f, 128.0f);
+        drawControlCard(458.0f, 170.0f, 128.0f);
+        drawControlCard(594.0f, 170.0f, 185.0f);
+        drawControlCard(790.0f, 170.0f, 204.0f);
+        graphics.setColour(cardTextColour.withAlpha(0.72f));
+        graphics.setFont(makeAuraFont(9.5f, true));
+        graphics.drawText("Waveform", 605, 188, 160, 16, juce::Justification::centredLeft);
+        graphics.drawText("LFO destination", 802, 188, 180, 16, juce::Justification::centredLeft);
+        drawLfoScope(graphics, { 322.0f, 333.0f, 672.0f, 151.0f });
+    }
+    else
+    {
+        drawControlCard(322.0f, 170.0f, 128.0f);
+        drawControlCard(458.0f, 170.0f, 185.0f);
+        drawControlCard(322.0f, 333.0f, 672.0f, 151.0f);
+        graphics.setColour(cardTextColour.withAlpha(0.72f));
+        graphics.setFont(makeAuraFont(9.5f, true));
+        graphics.drawText("FFT window", 473, 188, 154, 16, juce::Justification::centredLeft);
+        graphics.setColour(cardTextColour.withAlpha(0.7f));
+        graphics.setFont(makeAuraFont(9.0f));
+        graphics.drawText("Switch each layer independently. FFT latency follows the selected window size.",
+                          346, 450, 620, 24, juce::Justification::centredLeft);
+    }
 
     graphics.setColour(softLineColour);
     graphics.drawLine(30.0f, 566.0f, designWidth - 30.0f, 566.0f, 1.0f);
     graphics.setColour(mutedTextColour);
-    graphics.setFont(juce::Font(9.0f));
-    graphics.drawText("2048 FFT  ·  4× OVERLAP  ·  GRAIN FEEDBACK", 36, 578, 440, 19,
+    graphics.setFont(makeAuraFont(8.5f));
+    graphics.drawText("SPECTRAL SHIFT  ·  GRAIN DELAY  ·  LFO", 36, 578, 430, 19,
                       juce::Justification::centredLeft);
     graphics.setColour(leafColour);
-    graphics.drawText("355ERA  /  FIELD SERIES 01", 760, 578, 248, 19,
+    graphics.drawText("355ERA  /  AURA", 760, 578, 248, 19,
                       juce::Justification::centredRight);
+}
+
+void AuraAudioProcessorEditor::drawLfoScope(juce::Graphics& graphics, juce::Rectangle<float> bounds)
+{
+    graphics.setColour(cardColour);
+    graphics.fillRoundedRectangle(bounds, 9.0f);
+    graphics.setColour(softLineColour.withAlpha(0.35f));
+    graphics.drawRoundedRectangle(bounds, 9.0f, 1.0f);
+    auto plot = bounds.reduced(20.0f, 20.0f);
+    plot.removeFromTop(8.0f);
+    graphics.setColour(cardTextColour.withAlpha(0.12f));
+    graphics.drawLine(plot.getX(), plot.getCentreY(), plot.getRight(), plot.getCentreY(), 0.8f);
+    graphics.drawLine(plot.getX(), plot.getY(), plot.getX(), plot.getBottom(), 0.8f);
+
+    juce::Path wave;
+    const auto shape = juce::jmax(0, lfoShapeSelector.getSelectedId() - 1);
+    for (int sample = 0; sample <= 128; ++sample)
+    {
+        const auto phase = static_cast<float>(sample) / 128.0f;
+        float value = 0.0f;
+        switch (shape)
+        {
+            case 0: value = std::sin(phase * juce::MathConstants<float>::twoPi); break;
+            case 1: value = 1.0f - 4.0f * std::abs(phase - 0.5f); break;
+            case 2: value = phase * 2.0f - 1.0f; break;
+            case 3: value = 1.0f - phase * 2.0f; break;
+            case 4: value = phase < 0.5f ? 1.0f : -1.0f; break;
+            case 5: value = std::sin(phase * 18.0f) * std::cos(phase * 7.0f); break;
+            default: break;
+        }
+        const auto x = plot.getX() + phase * plot.getWidth();
+        const auto y = plot.getCentreY() - value * plot.getHeight() * 0.4f;
+        if (sample == 0)
+            wave.startNewSubPath(x, y);
+        else
+            wave.lineTo(x, y);
+    }
+    graphics.setColour(warmAccentColour);
+    graphics.strokePath(wave, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved,
+                                                    juce::PathStrokeType::rounded));
+    const auto phase = processor.getLfoPhase();
+    const auto lfo = processor.getLfoValue();
+    const auto markerX = plot.getX() + phase * plot.getWidth();
+    const auto markerY = plot.getCentreY() - lfo * plot.getHeight() * 0.4f;
+    graphics.setColour(warmAccentColour.withAlpha(0.2f));
+    graphics.fillEllipse(markerX - 7.0f, markerY - 7.0f, 14.0f, 14.0f);
+    graphics.setColour(warmAccentColour);
+    graphics.fillEllipse(markerX - 3.0f, markerY - 3.0f, 6.0f, 6.0f);
+    graphics.setColour(cardTextColour.withAlpha(0.72f));
+    graphics.setFont(makeAuraFont(8.0f));
+    graphics.drawText("LFO SHAPE  /  LIVE PHASE", 16, 5, 220, 14, juce::Justification::centredLeft);
 }
 
 void AuraAudioProcessorEditor::resized()
@@ -380,44 +730,120 @@ void AuraAudioProcessorEditor::resized()
     const auto offsetX = (static_cast<float>(getWidth()) - designWidth * scale) * 0.5f;
     const auto offsetY = (static_cast<float>(getHeight()) - designHeight * scale) * 0.5f;
 
-    constexpr int dialWidth = 150;
-    constexpr int dialHeight = 151;
-    constexpr int dialGap = 10;
-    constexpr int firstDialX = 322;
-    constexpr int topRowY = 170;
-    constexpr int bottomRowY = 333;
-    const auto placeDial = [scale, offsetX, offsetY](AuraDial& dial, int x, int y)
-    {
-        dial.setBounds(juce::roundToInt(offsetX + static_cast<float>(x) * scale),
-                       juce::roundToInt(offsetY + static_cast<float>(y) * scale),
-                       juce::roundToInt(150.0f * scale), juce::roundToInt(151.0f * scale));
-        dial.setScale(scale);
-    };
-    placeDial(shiftDial, firstDialX, topRowY);
-    placeDial(mixDial, firstDialX + dialWidth + dialGap, topRowY);
-    placeDial(bloomDial, firstDialX + (dialWidth + dialGap) * 2, topRowY);
-    placeDial(grainDial, firstDialX + (dialWidth + dialGap) * 3, topRowY);
-    placeDial(grainSizeDial, firstDialX + dialWidth / 2 + dialGap / 2, bottomRowY);
-    placeDial(densityDial, firstDialX + dialWidth / 2 + dialGap / 2 + dialWidth + dialGap,
-              bottomRowY);
-    placeDial(feedbackDial, firstDialX + dialWidth / 2 + dialGap / 2 + (dialWidth + dialGap) * 2,
-              bottomRowY);
-
     const auto scaledBounds = [scale, offsetX, offsetY](int x, int y, int width, int height)
     {
-        return juce::Rectangle<int>(juce::roundToInt(offsetX + static_cast<float>(x) * scale),
-                                    juce::roundToInt(offsetY + static_cast<float>(y) * scale),
-                                    juce::roundToInt(static_cast<float>(width) * scale),
-                                    juce::roundToInt(static_cast<float>(height) * scale));
+        // Round both edges from the design grid. Rounding the origin and size
+        // independently makes adjacent controls drift by a pixel at fractional
+        // scales, which is especially visible on the preset and tab buttons.
+        const auto left = juce::roundToInt(offsetX + static_cast<float>(x) * scale);
+        const auto top = juce::roundToInt(offsetY + static_cast<float>(y) * scale);
+        const auto right = juce::roundToInt(offsetX + static_cast<float>(x + width) * scale);
+        const auto bottom = juce::roundToInt(offsetY + static_cast<float>(y + height) * scale);
+        return juce::Rectangle<int>(left, top, juce::jmax(0, right - left), juce::jmax(0, bottom - top));
     };
+    const auto placeDial = [scale, scaledBounds](AuraDial& dial, int x, int y)
+    {
+        dial.setBounds(scaledBounds(x, y, 128, 151));
+        dial.setScale(scale);
+    };
+    for (int column = 0; column < 4; ++column)
+    {
+        const auto x = 333 + column * 160;
+        const auto lowerX = x;
+        switch (column)
+        {
+            case 0: placeDial(shiftDial, x, 170); placeDial(lowCutDial, lowerX, 333); break;
+            case 1: placeDial(mixDial, x, 170); placeDial(highCutDial, lowerX, 333); break;
+            case 2: placeDial(bloomDial, x, 170); placeDial(toneDial, lowerX, 333); break;
+            case 3: placeDial(blurDial, x, 170); placeDial(widthDial, lowerX, 333); break;
+            default: break;
+        }
+    }
+    placeDial(grainDial, 322, 170);
+    placeDial(grainSizeDial, 458, 170);
+    placeDial(grainPitchDial, 594, 170);
+    placeDial(densityDial, 730, 170);
+    placeDial(feedbackDial, 866, 170);
+    placeDial(lfoRateDial, 322, 170);
+    placeDial(lfoDepthDial, 458, 170);
+    placeDial(outputDial, 322, 170);
+    grainPad.setBounds(scaledBounds(30, 205, 258, 278));
+
+    spectralTab.setBounds(scaledBounds(322, 76, 104, 26));
+    spectralTab.setFont(makeAuraFont(10.0f * scale, true));
+    grainTab.setBounds(scaledBounds(432, 76, 104, 26));
+    grainTab.setFont(makeAuraFont(10.0f * scale, true));
+    modulationTab.setBounds(scaledBounds(542, 76, 104, 26));
+    modulationTab.setFont(makeAuraFont(10.0f * scale, true));
+    settingsTab.setBounds(scaledBounds(652, 76, 112, 26));
+    settingsTab.setFont(makeAuraFont(10.0f * scale, true));
+
+    presetLabel.setText("PRESETS", juce::dontSendNotification);
     presetLabel.setBounds(scaledBounds(330, 137, 56, 26));
-    presetLabel.setFont(juce::Font(8.5f * scale, juce::Font::bold));
+    presetLabel.setFont(makeAuraFont(9.0f * scale, true));
     presetSelector.setBounds(scaledBounds(390, 135, 270, 28));
-    savePresetButton.setBounds(scaledBounds(670, 135, 112, 28));
+    presetSelector.setFont(makeAuraFont(11.0f * scale));
+    savePresetButton.setBounds(scaledBounds(670, 135, 108, 28));
+    savePresetButton.setFont(makeAuraFont(10.0f * scale, true));
+    loadBankButton.setBounds(scaledBounds(786, 135, 100, 28));
+    loadBankButton.setFont(makeAuraFont(10.0f * scale, true));
+    saveBankButton.setBounds(scaledBounds(894, 135, 100, 28));
+    saveBankButton.setFont(makeAuraFont(10.0f * scale, true));
     presetNameEditor.setBounds(scaledBounds(390, 135, 194, 28));
-    presetNameEditor.setFont(juce::Font(10.0f * scale));
+    presetNameEditor.setFont(makeAuraFont(10.0f * scale));
     confirmPresetButton.setBounds(scaledBounds(590, 135, 78, 28));
+    confirmPresetButton.setFont(makeAuraFont(10.0f * scale, true));
     cancelPresetButton.setBounds(scaledBounds(674, 135, 88, 28));
+    cancelPresetButton.setFont(makeAuraFont(10.0f * scale, true));
+
+    lfoShapeSelector.setBounds(scaledBounds(605, 209, 160, 30));
+    lfoShapeSelector.setFont(makeAuraFont(10.5f * scale));
+    lfoTargetSelector.setBounds(scaledBounds(802, 209, 180, 30));
+    lfoTargetSelector.setFont(makeAuraFont(10.5f * scale));
+    fftSelector.setBounds(scaledBounds(473, 208, 154, 30));
+    fftSelector.setFont(makeAuraFont(10.5f * scale));
+    spectralEnableButton.setBounds(scaledBounds(346, 358, 190, 28));
+    spectralEnableButton.setFont(makeAuraFont(10.0f * scale));
+    grainEnableButton.setBounds(scaledBounds(552, 358, 180, 28));
+    grainEnableButton.setFont(makeAuraFont(10.0f * scale));
+    toneEnableButton.setBounds(scaledBounds(748, 358, 180, 28));
+    toneEnableButton.setFont(makeAuraFont(10.0f * scale));
+}
+
+void AuraAudioProcessorEditor::setActivePage(Page page)
+{
+    activePage = page;
+    const auto spectral = page == Page::spectral;
+    const auto grain = page == Page::grain;
+    const auto modulation = page == Page::modulation;
+    const auto settings = page == Page::settings;
+    shiftDial.setVisible(spectral);
+    mixDial.setVisible(spectral);
+    bloomDial.setVisible(spectral);
+    blurDial.setVisible(spectral);
+    lowCutDial.setVisible(spectral);
+    highCutDial.setVisible(spectral);
+    toneDial.setVisible(spectral);
+    widthDial.setVisible(spectral);
+    grainDial.setVisible(grain);
+    grainSizeDial.setVisible(grain);
+    grainPitchDial.setVisible(grain);
+    densityDial.setVisible(grain);
+    feedbackDial.setVisible(grain);
+    lfoRateDial.setVisible(modulation);
+    lfoDepthDial.setVisible(modulation);
+    lfoShapeSelector.setVisible(modulation);
+    lfoTargetSelector.setVisible(modulation);
+    outputDial.setVisible(settings);
+    fftSelector.setVisible(settings);
+    spectralEnableButton.setVisible(settings);
+    grainEnableButton.setVisible(settings);
+    toneEnableButton.setVisible(settings);
+    spectralTab.setToggleState(spectral, juce::dontSendNotification);
+    grainTab.setToggleState(grain, juce::dontSendNotification);
+    modulationTab.setToggleState(modulation, juce::dontSendNotification);
+    settingsTab.setToggleState(settings, juce::dontSendNotification);
+    repaint();
 }
 
 void AuraAudioProcessorEditor::refreshPresetMenu(int preferredItemID)
@@ -498,6 +924,169 @@ void AuraAudioProcessorEditor::loadSelectedPreset()
     processor.getParameters().replaceState(state);
 }
 
+void AuraAudioProcessorEditor::importPresetBank()
+{
+    bankFileChooser = std::make_unique<juce::FileChooser>(
+        "Load Aura preset bank", juce::File{}, "*.aubank;*.aupreset");
+    bankFileChooser->launchAsync(juce::FileBrowserComponent::openMode
+                                     | juce::FileBrowserComponent::canSelectFiles,
+                                 [this](const juce::FileChooser& chooser)
+    {
+        const auto file = chooser.getResult();
+        if (file.existsAsFile())
+            importPresetFile(file);
+    });
+}
+
+void AuraAudioProcessorEditor::importPresetFile(const juce::File& file)
+{
+    const auto xml = juce::XmlDocument::parse(file);
+    if (xml == nullptr)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Bank", "This file is not valid Aura preset data.");
+        return;
+    }
+
+    const auto presetDirectory = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                                     .getChildFile("355ERA")
+                                     .getChildFile("Aura")
+                                     .getChildFile("Presets");
+    if (presetDirectory.createDirectory().failed())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Bank", "Aura could not create its preset folder.");
+        return;
+    }
+
+    const auto writePreset = [&presetDirectory, this](juce::ValueTree state, juce::String name)
+    {
+        if (!state.isValid() || state.getType() != processor.getParameters().state.getType())
+            return juce::File{};
+
+        name = name.trim();
+        if (name.isEmpty())
+            name = "Imported Preset";
+        state.setProperty("auraStateVersion", 3, nullptr);
+        state.setProperty("presetName", name, nullptr);
+
+        auto safeName = juce::File::createLegalFileName(name);
+        if (safeName.isEmpty())
+            safeName = "Imported Preset";
+        auto destination = presetDirectory.getChildFile(safeName + ".aupreset");
+        for (int suffix = 2; destination.existsAsFile(); ++suffix)
+            destination = presetDirectory.getChildFile(safeName + " (" + juce::String(suffix) + ").aupreset");
+
+        const auto stateXml = state.createXml();
+        if (stateXml == nullptr || !destination.replaceWithText(stateXml->toString()))
+            return juce::File{};
+        return destination;
+    };
+
+    int importedCount = 0;
+    juce::File mostRecentPreset;
+    if (xml->hasTagName("AURA_BANK"))
+    {
+        for (auto* preset = xml->getFirstChildElement(); preset != nullptr; preset = preset->getNextElement())
+        {
+            if (!preset->hasTagName("PRESET"))
+                continue;
+            const auto* stateXml = preset->getFirstChildElement();
+            if (stateXml == nullptr)
+                continue;
+            const auto state = juce::ValueTree::fromXml(*stateXml);
+            const auto name = preset->getStringAttribute("name", state.getProperty("presetName").toString());
+            const auto destination = writePreset(state, name);
+            if (destination.existsAsFile())
+            {
+                mostRecentPreset = destination;
+                ++importedCount;
+            }
+        }
+    }
+    else
+    {
+        const auto state = juce::ValueTree::fromXml(*xml);
+        mostRecentPreset = writePreset(state, file.getFileNameWithoutExtension());
+        importedCount = mostRecentPreset.existsAsFile() ? 1 : 0;
+    }
+
+    if (importedCount == 0)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                               "Aura Bank", "No compatible Aura presets were found in this file.");
+        return;
+    }
+
+    refreshPresetMenu();
+    for (size_t index = 0; index < userPresetFiles.size(); ++index)
+    {
+        if (userPresetFiles[index] == mostRecentPreset)
+        {
+            presetSelector.setSelectedId(userPresetStartID + static_cast<int>(index));
+            break;
+        }
+    }
+    juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::NoIcon,
+                                           "Aura Bank", "Loaded " + juce::String(importedCount)
+                                               + (importedCount == 1 ? " preset." : " presets."));
+}
+
+void AuraAudioProcessorEditor::exportPresetBank()
+{
+    if (userPresetFiles.empty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::InfoIcon,
+                                               "Aura Bank", "Save at least one user preset before exporting a bank.");
+        return;
+    }
+
+    const auto suggestedFile = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                                   .getChildFile("Aura User Bank.aubank");
+    bankFileChooser = std::make_unique<juce::FileChooser>(
+        "Save Aura preset bank", suggestedFile, "*.aubank");
+    bankFileChooser->launchAsync(juce::FileBrowserComponent::saveMode
+                                     | juce::FileBrowserComponent::canSelectFiles
+                                     | juce::FileBrowserComponent::warnAboutOverwriting,
+                                 [this](const juce::FileChooser& chooser)
+    {
+        auto destination = chooser.getResult();
+        if (destination == juce::File{})
+            return;
+        if (!destination.hasFileExtension("aubank"))
+            destination = destination.withFileExtension("aubank");
+
+        auto bankXml = std::make_unique<juce::XmlElement>("AURA_BANK");
+        bankXml->setAttribute("formatVersion", 1);
+        bankXml->setAttribute("plugin", "Aura");
+        int exportedCount = 0;
+        for (const auto& presetFile : userPresetFiles)
+        {
+            auto presetXml = juce::XmlDocument::parse(presetFile);
+            if (presetXml == nullptr)
+                continue;
+            const auto state = juce::ValueTree::fromXml(*presetXml);
+            if (!state.isValid() || state.getType() != processor.getParameters().state.getType())
+                continue;
+
+            auto* preset = bankXml->createNewChildElement("PRESET");
+            preset->setAttribute("name", presetFile.getFileNameWithoutExtension());
+            preset->addChildElement(presetXml.release());
+            ++exportedCount;
+        }
+
+        if (exportedCount == 0 || !destination.replaceWithText(bankXml->toString()))
+        {
+            juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                                   "Aura Bank", "Aura could not write this preset bank.");
+            return;
+        }
+        juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::NoIcon,
+                                               "Aura Bank", "Saved " + juce::String(exportedCount)
+                                                   + (exportedCount == 1 ? " preset to bank." : " presets to bank."));
+    });
+}
+
 void AuraAudioProcessorEditor::beginSavingPreset()
 {
     const auto selectedID = presetSelector.getSelectedId();
@@ -510,6 +1099,8 @@ void AuraAudioProcessorEditor::beginSavingPreset()
     presetNameEditor.setText(initialName, juce::dontSendNotification);
     presetSelector.setVisible(false);
     savePresetButton.setVisible(false);
+    loadBankButton.setVisible(false);
+    saveBankButton.setVisible(false);
     presetNameEditor.setVisible(true);
     confirmPresetButton.setVisible(true);
     cancelPresetButton.setVisible(true);
@@ -552,7 +1143,7 @@ void AuraAudioProcessorEditor::savePresetFromEditor()
         file = directory.getChildFile(safeName + " (" + juce::String(suffix) + ").aupreset");
 
     auto state = processor.getParameters().copyState();
-    state.setProperty("auraStateVersion", 2, nullptr);
+    state.setProperty("auraStateVersion", 3, nullptr);
     state.setProperty("presetName", name, nullptr);
     const auto xml = state.createXml();
     if (xml == nullptr || !file.replaceWithText(xml->toString()))
@@ -579,6 +1170,8 @@ void AuraAudioProcessorEditor::cancelSavingPreset()
 {
     presetSelector.setVisible(true);
     savePresetButton.setVisible(true);
+    loadBankButton.setVisible(true);
+    saveBankButton.setVisible(true);
     presetNameEditor.setVisible(false);
     confirmPresetButton.setVisible(false);
     cancelPresetButton.setVisible(false);
@@ -590,86 +1183,18 @@ void AuraAudioProcessorEditor::timerCallback()
     shiftDial.refreshValue();
     mixDial.refreshValue();
     bloomDial.refreshValue();
+    blurDial.refreshValue();
+    lowCutDial.refreshValue();
+    highCutDial.refreshValue();
     grainDial.refreshValue();
     grainSizeDial.refreshValue();
+    grainPitchDial.refreshValue();
     densityDial.refreshValue();
     feedbackDial.refreshValue();
+    toneDial.refreshValue();
+    widthDial.refreshValue();
+    lfoRateDial.refreshValue();
+    lfoDepthDial.refreshValue();
+    outputDial.refreshValue();
     repaint();
-}
-
-void AuraAudioProcessorEditor::drawLilyVisualizer(juce::Graphics& graphics,
-                                                  juce::Point<float> centre, float level)
-{
-    const auto response = juce::jlimit(0.0f, 1.0f, level * 5.0f);
-    const auto pulse = response * 10.0f;
-    const auto haloRadius = 94.0f + response * 3.0f;
-    graphics.setGradientFill(juce::ColourGradient(lilyColour.withAlpha(0.25f), centre.x, centre.y,
-                                                   lilyColour.withAlpha(0.0f),
-                                                   centre.x + 96.0f, centre.y, true));
-    graphics.fillEllipse(centre.x - 96.0f, centre.y - 96.0f, 192.0f, 192.0f);
-    graphics.setColour(softLineColour.withAlpha(0.95f));
-    graphics.drawEllipse(centre.x - haloRadius, centre.y - haloRadius,
-                         haloRadius * 2.0f, haloRadius * 2.0f, 1.0f);
-    graphics.setColour(leafColour.withAlpha(0.46f));
-    graphics.drawEllipse(centre.x - 76.0f, centre.y - 76.0f, 152.0f, 152.0f, 1.0f);
-
-    for (int tick = 0; tick < 24; ++tick)
-    {
-        const auto angle = juce::MathConstants<float>::twoPi * static_cast<float>(tick) / 24.0f;
-        const auto innerRadius = 81.0f;
-        const auto outerRadius = innerRadius + 3.0f + response * 5.0f;
-        graphics.setColour(leafColour.withAlpha(0.32f + response * 0.32f));
-        graphics.drawLine(centre.x + std::sin(angle) * innerRadius,
-                          centre.y - std::cos(angle) * innerRadius,
-                          centre.x + std::sin(angle) * outerRadius,
-                          centre.y - std::cos(angle) * outerRadius,
-                          tick % 3 == 0 ? 1.4f : 0.8f);
-    }
-
-    const auto drawPetal = [&graphics, centre](float angle, float length, float halfWidth,
-                                                juce::Colour fill, float alpha)
-    {
-        juce::Path petal;
-        petal.startNewSubPath(0.0f, -8.0f);
-        petal.cubicTo(halfWidth, -length * 0.36f, halfWidth * 1.05f, -length * 0.82f,
-                      0.0f, -length);
-        petal.cubicTo(-halfWidth * 1.05f, -length * 0.82f, -halfWidth, -length * 0.36f,
-                      0.0f, -8.0f);
-        petal.closeSubPath();
-        petal.applyTransform(juce::AffineTransform::rotation(angle).translated(centre.x, centre.y));
-        graphics.setColour(fill.withAlpha(alpha));
-        graphics.fillPath(petal);
-        graphics.setColour(leafColour.withAlpha(0.58f));
-        graphics.strokePath(petal, juce::PathStrokeType(0.9f));
-    };
-
-    const auto outerLength = 57.0f + pulse;
-    for (int petal = 0; petal < 6; ++petal)
-    {
-        const auto angle = juce::MathConstants<float>::twoPi * static_cast<float>(petal) / 6.0f;
-        drawPetal(angle, outerLength, 13.0f + response * 1.5f, lilyColour, 0.68f);
-    }
-    const auto innerLength = 42.0f + pulse * 0.65f;
-    for (int petal = 0; petal < 6; ++petal)
-    {
-        const auto angle = juce::MathConstants<float>::twoPi * (static_cast<float>(petal) + 0.5f) / 6.0f;
-        drawPetal(angle, innerLength, 10.0f, lilyLightColour, 0.92f);
-    }
-
-    for (int stamen = 0; stamen < 6; ++stamen)
-    {
-        const auto angle = juce::MathConstants<float>::twoPi * static_cast<float>(stamen) / 6.0f;
-        const auto x1 = centre.x + std::sin(angle) * 4.0f;
-        const auto y1 = centre.y - std::cos(angle) * 4.0f;
-        const auto x2 = centre.x + std::sin(angle) * 14.0f;
-        const auto y2 = centre.y - std::cos(angle) * 14.0f;
-        graphics.setColour(warmAccentColour.withAlpha(0.9f));
-        graphics.drawLine(x1, y1, x2, y2, 1.2f);
-        graphics.fillEllipse(x2 - 2.0f, y2 - 2.0f, 4.0f, 4.0f);
-    }
-
-    graphics.setColour(juce::Colour{ 0xfffbf8ed });
-    graphics.fillEllipse(centre.x - 9.0f, centre.y - 9.0f, 18.0f, 18.0f);
-    graphics.setColour(warmAccentColour);
-    graphics.fillEllipse(centre.x - 4.0f, centre.y - 4.0f, 8.0f, 8.0f);
 }
