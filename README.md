@@ -47,7 +47,7 @@ CMake downloads the pinned JUCE 9.0.3 source on the first configure, so the firs
 
 ## Add to GitHub
 
-Create an empty repository on GitHub, then connect this local Git repository and push the `main` branch:
+This project folder is already a Git repository on branch `main` with an initial commit. Create an empty repository on GitHub, then connect and push it:
 
 ```sh
 git remote add origin https://github.com/YOUR-ACCOUNT/Aura.git
@@ -55,6 +55,16 @@ git push -u origin main
 ```
 
 Replace `YOUR-ACCOUNT` with your GitHub username or organization. The workflow builds the plugin after pushes and pull requests and uploads each platform's VST3 bundle as a run artifact; it does not publish a release or install binaries.
+
+If you start from the source ZIP instead, initialize Git and create the first commit before adding the remote:
+
+```sh
+git init --initial-branch=main
+git add .
+git commit -m "Add Aura VST3 spectral shifter"
+git remote add origin https://github.com/YOUR-ACCOUNT/Aura.git
+git push -u origin main
+```
 
 ## Notes
 
