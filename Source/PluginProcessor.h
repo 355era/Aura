@@ -87,8 +87,36 @@ private:
         bool phaseInitialized = false;
     };
 
+    class GrainDelayChannel
+    {
+    public:
+        void prepare(double sampleRate);
+        void reset() noexcept;
+        float processSample(float input, float pitchRatio, float sizeMilliseconds,
+                            float grainsPerSecond, float feedback) noexcept;
+
+    private:
+        struct GrainVoice
+        {
+            double readPosition = 0.0;
+            float readStep = 1.0f;
+            int age = 0;
+            int length = 1;
+            bool active = false;
+        };
+
+        static constexpr size_t voiceCount = 8;
+        std::vector<float> delayBuffer;
+        std::array<GrainVoice, voiceCount> voices{};
+        double currentSampleRate = 44100.0;
+        int writePosition = 0;
+        int samplesUntilNextGrain = 0;
+        size_t nextVoice = 0;
+    };
+
     juce::AudioProcessorValueTreeState parameters;
     std::vector<SpectralChannel> channelProcessors;
+    std::vector<GrainDelayChannel> grainProcessors;
     std::atomic<float> inputMeter{ 0.0f };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AuraAudioProcessor)

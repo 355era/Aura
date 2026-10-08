@@ -32,16 +32,33 @@ juce::AudioProcessorValueTreeState::ParameterLayout AuraAudioProcessor::createPa
     layout.add(std::make_unique<Parameter>(juce::ParameterID{ "bloom", 1 }, "Bloom",
                                            juce::NormalisableRange<float>{ 0.0f, 100.0f, 0.1f },
                                            18.0f, "%"));
+    layout.add(std::make_unique<Parameter>(juce::ParameterID{ "grain", 1 }, "Grain",
+                                           juce::NormalisableRange<float>{ 0.0f, 100.0f, 0.1f },
+                                           22.0f, "%"));
+    layout.add(std::make_unique<Parameter>(juce::ParameterID{ "grainsize", 1 }, "Grain Size",
+                                           juce::NormalisableRange<float>{ 25.0f, 240.0f, 1.0f },
+                                           120.0f, "ms"));
+    layout.add(std::make_unique<Parameter>(juce::ParameterID{ "density", 1 }, "Density",
+                                           juce::NormalisableRange<float>{ 2.0f, 24.0f, 0.1f },
+                                           12.0f, "gr/s"));
+    layout.add(std::make_unique<Parameter>(juce::ParameterID{ "feedback", 1 }, "Feedback",
+                                           juce::NormalisableRange<float>{ 0.0f, 75.0f, 0.1f },
+                                           18.0f, "%"));
     return layout;
 }
 
 void AuraAudioProcessor::prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock)
 {
-    juce::ignoreUnused(sampleRate, maximumExpectedSamplesPerBlock);
+    juce::ignoreUnused(maximumExpectedSamplesPerBlock);
     channelProcessors.clear();
     channelProcessors.resize(static_cast<size_t>(getTotalNumInputChannels()));
     for (auto& channel : channelProcessors)
         channel.reset();
+
+    grainProcessors.clear();
+    grainProcessors.resize(static_cast<size_t>(getTotalNumInputChannels()));
+    for (auto& channel : grainProcessors)
+        channel.prepare(sampleRate);
 
     setLatencySamples(2048);
     inputMeter.store(0.0f, std::memory_order_relaxed);
@@ -50,6 +67,7 @@ void AuraAudioProcessor::prepareToPlay(double sampleRate, int maximumExpectedSam
 void AuraAudioProcessor::releaseResources()
 {
     channelProcessors.clear();
+    grainProcessors.clear();
 }
 
 bool AuraAudioProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
@@ -70,6 +88,10 @@ void AuraAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     const auto* shiftParameter = parameters.getRawParameterValue("shift");
     const auto* mixParameter = parameters.getRawParameterValue("mix");
     const auto* bloomParameter = parameters.getRawParameterValue("bloom");
+    const auto* grainParameter = parameters.getRawParameterValue("grain");
+    const auto* grainSizeParameter = parameters.getRawParameterValue("grainsize");
+    const auto* densityParameter = parameters.getRawParameterValue("density");
+    const auto* feedbackParameter = parameters.getRawParameterValue("feedback");
     const auto shift = shiftParameter != nullptr ? shiftParameter->load(std::memory_order_relaxed) : 0.0f;
     const auto mix = mixParameter != nullptr
                          ? juce::jlimit(0.0f, 1.0f, mixParameter->load(std::memory_order_relaxed) * 0.01f)
@@ -77,6 +99,17 @@ void AuraAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
     const auto bloom = bloomParameter != nullptr
                            ? juce::jlimit(0.0f, 1.0f, bloomParameter->load(std::memory_order_relaxed) * 0.01f)
                            : 0.0f;
+    const auto grainMix = grainParameter != nullptr
+                              ? juce::jlimit(0.0f, 1.0f, grainParameter->load(std::memory_order_relaxed) * 0.01f)
+                              : 0.0f;
+    const auto grainSize = grainSizeParameter != nullptr
+                               ? grainSizeParameter->load(std::memory_order_relaxed) : 120.0f;
+    const auto density = densityParameter != nullptr
+                             ? densityParameter->load(std::memory_order_relaxed) : 12.0f;
+    const auto feedback = feedbackParameter != nullptr
+                              ? juce::jlimit(0.0f, 0.75f,
+                                             feedbackParameter->load(std::memory_order_relaxed) * 0.01f)
+                              : 0.0f;
     const auto pitchRatio = std::pow(2.0f, shift / 12.0f);
 
     const auto channelsToProcess = juce::jmin(buffer.getNumChannels(), static_cast<int>(channelProcessors.size()));
@@ -90,8 +123,11 @@ void AuraAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::Mi
             const auto input = samples[sampleIndex];
             inputSumSquares += static_cast<double>(input) * static_cast<double>(input);
             float delayedDry = 0.0f;
-            const auto wet = channel.processSample(input, pitchRatio, bloom, delayedDry);
-            const auto output = delayedDry + (wet - delayedDry) * mix;
+            const auto spectralWet = channel.processSample(input, pitchRatio, bloom, delayedDry);
+            const auto grainWet = grainProcessors[static_cast<size_t>(channelIndex)].processSample(
+                spectralWet, pitchRatio, grainSize, density, feedback);
+            const auto processedWet = spectralWet + (grainWet - spectralWet) * grainMix;
+            const auto output = delayedDry + (processedWet - delayedDry) * mix;
             samples[sampleIndex] = output;
         }
     }
@@ -109,8 +145,7 @@ juce::AudioProcessorEditor* AuraAudioProcessor::createEditor()
 
 double AuraAudioProcessor::getTailLengthSeconds() const
 {
-    const auto sampleRate = getSampleRate();
-    return sampleRate > 0.0 ? 4096.0 / sampleRate : 0.0;
+    return 2.0;
 }
 
 void AuraAudioProcessor::getStateInformation(juce::MemoryBlock& destinationData)
@@ -380,6 +415,96 @@ void AuraAudioProcessor::SpectralChannel::processFrame(float pitchRatio, float b
         normalizationQueue[static_cast<size_t>(queueIndex)] +=
             analysisWindow[static_cast<size_t>(index)] * synthesisWindow[static_cast<size_t>(index)];
     }
+}
+
+void AuraAudioProcessor::GrainDelayChannel::prepare(double sampleRate)
+{
+    currentSampleRate = juce::jmax(8000.0, sampleRate);
+    const auto bufferSize = static_cast<size_t>(std::ceil(currentSampleRate * 2.0)) + 8U;
+    delayBuffer.assign(bufferSize, 0.0f);
+    reset();
+}
+
+void AuraAudioProcessor::GrainDelayChannel::reset() noexcept
+{
+    std::fill(delayBuffer.begin(), delayBuffer.end(), 0.0f);
+    voices.fill(GrainVoice{});
+    writePosition = 0;
+    samplesUntilNextGrain = 0;
+    nextVoice = 0;
+}
+
+float AuraAudioProcessor::GrainDelayChannel::processSample(float input, float pitchRatio,
+                                                           float sizeMilliseconds,
+                                                           float grainsPerSecond,
+                                                           float feedback) noexcept
+{
+    if (delayBuffer.empty())
+        return input;
+
+    const auto bufferSize = static_cast<int>(delayBuffer.size());
+    const auto grainLength = juce::jlimit(
+        32, bufferSize / 3,
+        juce::roundToInt(static_cast<float>(currentSampleRate) *
+                         juce::jlimit(25.0f, 240.0f, sizeMilliseconds) * 0.001f));
+
+    if (samplesUntilNextGrain <= 0)
+    {
+        auto& voice = voices[nextVoice];
+        voice.length = grainLength;
+        voice.age = 0;
+        voice.readStep = juce::jlimit(0.25f, 4.0f, pitchRatio);
+        voice.readPosition = static_cast<double>(writePosition - grainLength);
+        if (voice.readPosition < 0.0)
+            voice.readPosition += static_cast<double>(bufferSize);
+        voice.active = true;
+        nextVoice = (nextVoice + 1U) % voiceCount;
+        const auto safeDensity = juce::jlimit(2.0f, 24.0f, grainsPerSecond);
+        samplesUntilNextGrain = juce::jmax(1, juce::roundToInt(
+            static_cast<float>(currentSampleRate) / safeDensity));
+    }
+    --samplesUntilNextGrain;
+
+    float grainSum = 0.0f;
+    float windowSum = 0.0f;
+    for (auto& voice : voices)
+    {
+        if (!voice.active)
+            continue;
+        if (voice.age >= voice.length)
+        {
+            voice.active = false;
+            continue;
+        }
+
+        const auto phase = static_cast<float>(voice.age) /
+                           static_cast<float>(juce::jmax(1, voice.length - 1));
+        const auto window = 0.5f - 0.5f * std::cos(juce::MathConstants<float>::twoPi * phase);
+        const auto readIndex = static_cast<int>(voice.readPosition);
+        const auto nextIndex = readIndex + 1 == bufferSize ? 0 : readIndex + 1;
+        const auto fraction = static_cast<float>(voice.readPosition - static_cast<double>(readIndex));
+        const auto first = delayBuffer[static_cast<size_t>(readIndex)];
+        const auto second = delayBuffer[static_cast<size_t>(nextIndex)];
+        const auto sample = first + (second - first) * fraction;
+        grainSum += sample * window;
+        windowSum += window;
+
+        voice.readPosition += static_cast<double>(voice.readStep);
+        if (voice.readPosition >= static_cast<double>(bufferSize))
+            voice.readPosition -= static_cast<double>(bufferSize);
+        ++voice.age;
+    }
+
+    const auto grainOutput = windowSum > 1.0e-5f ? grainSum / windowSum : 0.0f;
+    const auto boundedFeedback = juce::jlimit(0.0f, 0.75f, feedback);
+    const auto writeSample = boundedFeedback > 0.0f
+                                 ? std::tanh(input + grainOutput * boundedFeedback)
+                                 : input;
+    delayBuffer[static_cast<size_t>(writePosition)] = writeSample;
+    if (++writePosition >= bufferSize)
+        writePosition = 0;
+
+    return grainOutput;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

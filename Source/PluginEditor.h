@@ -15,10 +15,12 @@ class AuraDial final : public juce::Component
 public:
     AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFeel& lookAndFeel,
              const juce::String& parameterID, const juce::String& title,
-             const juce::String& helper, bool isSemitoneControl, double defaultValue);
+             const juce::String& helper, bool isSemitoneControl, double defaultValue,
+             const juce::String& displayUnits = "%");
 
     void resized() override;
     void refreshValue();
+    void setScale(float scale);
 
 private:
     juce::Slider slider;
@@ -27,6 +29,8 @@ private:
     juce::Label helperLabel;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
     bool displaysSemitones = false;
+    juce::String units;
+    float uiScale = 1.0f;
 };
 
 class AuraAudioProcessorEditor final : public juce::AudioProcessorEditor,
@@ -48,6 +52,10 @@ private:
     AuraDial shiftDial;
     AuraDial mixDial;
     AuraDial bloomDial;
+    AuraDial grainDial;
+    AuraDial grainSizeDial;
+    AuraDial densityDial;
+    AuraDial feedbackDial;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AuraAudioProcessorEditor)
 };
