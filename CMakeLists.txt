@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Aura VERSION 1.0.0 LANGUAGES C CXX)
+project(Aura VERSION 1.1.0 LANGUAGES C CXX)
 
 include(FetchContent)
 
@@ -22,7 +22,7 @@ juce_add_plugin(Aura
     PLUGIN_CODE AuR1
     FORMATS VST3 Standalone
     PRODUCT_NAME "Aura"
-    DESCRIPTION "FFT spectral shifter for botanical sound design"
+    DESCRIPTION "FFT spectral shifter and granular delay for botanical sound design"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT FALSE
     NEEDS_MIDI_OUTPUT FALSE
