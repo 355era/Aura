@@ -6,21 +6,19 @@
 
 ## Controls
 
-- **Shift** — continuously translates spectral frequencies by −1500 to +1500 Hz in 0.1 Hz steps. This is a frequency-domain offset, not semitone transposition. Double-click the knob to return to zero.
-- **Mix** — blends the latency-matched dry signal with the shifted signal.
-- **Bloom** — diffuses energy across neighboring spectral bins for a denser, softer tone.
-- **Grain** — blends in a granular delay layer after the spectral processor.
-- **Size** — sets grain length from 25 to 240 ms.
-- **Density** — sets the grain trigger rate from 2 to 24 grains per second.
-- **Feedback** — feeds grain output back into the delay buffer. Feedback is bounded and softly saturated.
+- **Spectral** page — **Shift** continuously translates spectral frequencies by −1500 to +1500 Hz; this is a true frequency offset, not semitone transposition. **Mix** blends latency-matched dry and processed audio. **Bloom** adds energy from nearby spectral bins, **Blur** smooths neighboring bins, and **Low cut / High cut** set the frequency band being shifted.
+- **Grain** page — **Grain mix** blends a granular delay after the spectral processor. **Grain size** sets each window from 25 to 240 ms, **Grain pitch** transposes grains, **Density** sets their trigger rate, and **Feedback** controls the bounded recirculation.
+- **Mod** page — select an LFO waveform and destination, then set its **Rate** and **Depth**. The live scope shows phase and waveform.
+- **Settings** page — choose a 2048, 4096, or 8192-point FFT, bypass each processing layer, and set **Output** level.
+- The granular field on the left is an XY control: drag left/right to set spectral Shift and up/down to set Grain mix. Its subtle flower outline frames the moving grain particles.
 
-The processor uses a custom 2048-point radix-2 FFT and 4× overlap-add to form an analytic signal, then applies a phase-continuous frequency offset in Hz. A Nyquist guard removes content that would alias when shifting upward. Shift and blend controls are smoothed to avoid abrupt automation steps. The grain engine uses eight preallocated Hann-windowed playback voices per channel, interpolated reads, and a two-second circular buffer. Feedback saturation is confined to the feedback signal, so it does not saturate the incoming sample. Its audio buffers are allocated before playback, so processing does not allocate memory on the audio thread. The plugin reports its 2048-sample FFT latency to the host and a two-second tail for the granular feedback. Controls are automatable and saved in the DAW project. The lily visualizer responds to input level.
+The processor uses a custom radix-2 FFT with 4× overlap-add to form an analytic signal, then applies a phase-continuous frequency offset in Hz. FFT sizes are 2048, 4096, and 8192 points; reported host latency follows the selected window. A Nyquist guard removes content that would alias when shifting upward. The grain engine uses eight Hann-windowed playback voices per channel, interpolated reads, and a two-second circular buffer. Feedback saturation is confined to the feedback signal. Audio buffers are allocated before playback, so processing does not allocate memory on the audio thread. Controls are automatable and saved in the DAW project. The vector granular visualizer responds to input and LFO activity.
 
-The editor keeps its existing layout and can be resized proportionally from 780 × 465 to 1560 × 930, so the darker, Portal-inspired charcoal, orchid, and mint treatment, lily visualizer, labels, and controls scale together in hosts such as Ableton Live. Artwork uses vector paths and text instead of stretched bitmap UI, keeping edges and lettering clear at different sizes.
+The editor keeps its existing layout and can be resized proportionally from 780 × 465 to 1560 × 930. Its graphite, warm coral, and pale-control palette uses system sans-serif typography, vector shapes, and text, so labels and edges stay clear at different sizes in hosts such as Ableton Live.
 
 ## Presets
 
-The menu includes five factory presets: **Botanical Init**, **Leaf Veil**, **Pollen Drift**, **Glass Orchid**, and **Rain Memory**. Choose one to load its settings. To save the current control values, click **Save Preset**, enter a name, then press **Save** (or Enter); press Escape or **Cancel** to leave without saving. Selecting a saved user preset and saving again with its existing name updates that file. A name already used by another preset is saved as a numbered copy rather than overwriting it. User presets are portable XML files (`.aupreset`) stored in the user's application data folder under `355ERA/Aura/Presets`; they remain available across sessions and are also stored inside the DAW project when the host saves Aura's state.
+The menu includes five factory presets: **Botanical Init**, **Leaf Veil**, **Pollen Drift**, **Glass Orchid**, and **Rain Memory**. Choose one to load its settings. To save a control setup, click **Save preset**, enter a name, then press **Save** or Enter. User presets are portable XML files (`.aupreset`) stored under `355ERA/Aura/Presets` in the user's application data folder. **Save bank** exports all saved user presets as a shareable `.aubank` file; **Load bank** imports that bank into the preset menu. Load bank also accepts a single `.aupreset` file. Aura presets remain available across sessions and are also saved inside the DAW project when the host saves the plugin state.
 
 ## Build on Windows
 
