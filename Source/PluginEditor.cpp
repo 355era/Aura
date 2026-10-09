@@ -21,8 +21,8 @@ const juce::Colour cardTextColour{ 0xff25292a };
 
 juce::Font makeAuraFont(float height, bool bold = false)
 {
-    return juce::Font(juce::Font::getDefaultSansSerifFontName(), height,
-                      bold ? juce::Font::bold : juce::Font::plain);
+    return juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),
+                                       height, bold ? juce::Font::bold : juce::Font::plain));
 }
 
 struct FactoryPreset
@@ -78,7 +78,7 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
     activeArc.addCentredArc(centreX, centreY, radius, radius, 0.0f, startAngle, angle, true);
     graphics.setColour(slider.isMouseOverOrDragging() ? warmAccentColour : aquaColour);
     graphics.strokePath(activeArc, juce::PathStrokeType(arcThickness, juce::PathStrokeType::curved,
-                                                         juce::PathStrokeType::rounded));
+                                                       juce::PathStrokeType::rounded));
 
     for (int tick = 0; tick <= 12; ++tick)
     {
@@ -95,9 +95,9 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
 
     const auto innerRadius = radius * 0.74f;
     graphics.setGradientFill(juce::ColourGradient(juce::Colour{ 0xfff8f7f2 },
-                                                   centreX - innerRadius, centreY - innerRadius,
-                                                   juce::Colour{ 0xffd5d7d2 },
-                                                   centreX + innerRadius, centreY + innerRadius, false));
+                                                 centreX - innerRadius, centreY - innerRadius,
+                                                 juce::Colour{ 0xffd5d7d2 },
+                                                 centreX + innerRadius, centreY + innerRadius, false));
     graphics.fillEllipse(centreX - innerRadius, centreY - innerRadius,
                          innerRadius * 2.0f, innerRadius * 2.0f);
     graphics.setColour(softLineColour.withAlpha(0.34f));
@@ -111,15 +111,40 @@ void AuraLookAndFeel::drawRotarySlider(juce::Graphics& graphics, int x, int y, i
                    centreY + std::sin(angle) * pointerLength);
     graphics.setColour(cardTextColour);
     graphics.strokePath(pointer, juce::PathStrokeType(juce::jmax(1.2f, radius * 0.035f), juce::PathStrokeType::curved,
-                                                       juce::PathStrokeType::rounded));
+                                                     juce::PathStrokeType::rounded));
     graphics.setColour(warmAccentColour);
     graphics.fillEllipse(centreX - 3.0f, centreY - 3.0f, 6.0f, 6.0f);
 }
 
+void AuraLookAndFeel::drawButtonText(juce::Graphics& graphics, juce::TextButton& button,
+                                     bool isMouseOverButton, bool isButtonDown)
+{
+    juce::ignoreUnused(isMouseOverButton, isButtonDown);
+    const auto colour = button.findColour(button.getToggleState()
+                                               ? juce::TextButton::textColourOnId
+                                               : juce::TextButton::textColourOffId);
+    graphics.setColour(colour);
+    graphics.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),
+                                                10.0f, juce::Font::bold)));
+    graphics.drawText(button.getButtonText(), button.getLocalBounds().reduced(6, 0),
+                      juce::Justification::centred);
+}
+
+void AuraLookAndFeel::drawComboBoxText(juce::Graphics& graphics, int width, int height,
+                                       bool isButtonDown, int itemIndex, const juce::String& itemText,
+                                       juce::ComboBox& box)
+{
+    juce::ignoreUnused(isButtonDown, itemIndex);
+    graphics.setColour(box.findColour(juce::ComboBox::textColourId));
+    graphics.setFont(juce::Font(juce::FontOptions(juce::Font::getDefaultSansSerifFontName(),
+                                                11.0f, juce::Font::plain)));
+    graphics.drawText(itemText, 0, 0, width, height, juce::Justification::centredLeft, true);
+}
+
 AuraDial::AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFeel& lookAndFeel,
-                   const juce::String& parameterID, const juce::String& title,
-                   const juce::String& helper, double defaultValue,
-                   const juce::String& displayUnits)
+                  const juce::String& parameterID, const juce::String& title,
+                  const juce::String& helper, double defaultValue,
+                  const juce::String& displayUnits)
     : units(displayUnits)
 {
     slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -147,7 +172,7 @@ AuraDial::AuraDial(juce::AudioProcessorValueTreeState& parameters, AuraLookAndFe
     helperLabel.setColour(juce::Label::textColourId, cardTextColour.withAlpha(0.64f));
     helperLabel.setFont(makeAuraFont(9.5f));
     addAndMakeVisible(helperLabel);
-    setTooltip(title + ": " + helper);
+    getProperties().set("tooltip", title + ": " + helper);
 
     attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
         parameters, parameterID, slider);
@@ -214,7 +239,8 @@ void AuraDial::refreshValue()
 AuraGrainPad::AuraGrainPad(AuraAudioProcessor& audioProcessor) : processor(audioProcessor)
 {
     setWantsKeyboardFocus(false);
-    setTooltip("Drag left or right to set spectral Shift; drag up or down to set Grain mix.");
+    getProperties().set("tooltip",
+                       "Drag left or right to set spectral Shift; drag up or down to set Grain mix.");
     startTimerHz(30);
 }
 
@@ -274,8 +300,6 @@ void AuraGrainPad::paint(juce::Graphics& graphics)
         graphics.drawLine(area.getX(), y, area.getRight(), y, 0.7f);
     }
 
-    // A fine eight-petal contour gives the granular field a botanical identity
-    // without hiding the moving particles or the useful XY control area.
     juce::Path flowerContour;
     const auto flowerCentre = area.getCentre();
     const auto flowerRadius = juce::jmin(area.getWidth(), area.getHeight()) * 0.42f;
@@ -337,27 +361,28 @@ void AuraGrainPad::paint(juce::Graphics& graphics)
 
 AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProcessor)
     : AudioProcessorEditor(&audioProcessor),
-      processor(audioProcessor),
-    shiftDial(audioProcessor.getParameters(), lookAndFeel, "shift", "Shift", "Spectral frequency offset", 0.0, "shiftHz"),
+      audioProcessor(audioProcessor),
+      shiftDial(audioProcessor.getParameters(), lookAndFeel, "shift", "Shift", "Spectral frequency offset", 0.0, "shiftHz"),
       mixDial(audioProcessor.getParameters(), lookAndFeel, "mix", "Mix", "Dry and processed level", 100.0),
       bloomDial(audioProcessor.getParameters(), lookAndFeel, "bloom", "Bloom", "Adds neighboring spectral energy", 18.0),
       blurDial(audioProcessor.getParameters(), lookAndFeel, "blur", "Blur", "Smooths nearby bins", 12.0),
       lowCutDial(audioProcessor.getParameters(), lookAndFeel, "lowcut", "Low cut", "Lowest shifted frequency", 20.0, "Hz"),
       highCutDial(audioProcessor.getParameters(), lookAndFeel, "highcut", "High cut", "Highest shifted frequency", 20000.0, "kHz"),
       grainDial(audioProcessor.getParameters(), lookAndFeel, "grain", "Grain mix", "Granular layer level", 22.0),
-      grainSizeDial(audioProcessor.getParameters(), lookAndFeel, "grainsize", "Grain size", "Length of each grain",
-                    120.0, "ms"),
-      grainPitchDial(audioProcessor.getParameters(), lookAndFeel, "grainpitch", "Grain pitch", "Pitch per grain",
-                     0.0, "st"),
-      densityDial(audioProcessor.getParameters(), lookAndFeel, "density", "Density", "Grains per second",
-                  12.0, "gr/s"),
-      feedbackDial(audioProcessor.getParameters(), lookAndFeel, "feedback", "Feedback", "Amount recirculated",
-                   18.0),
+      grainSizeDial(audioProcessor.getParameters(), lookAndFeel, "grainsize", "Grain size", "Length of each grain", 120.0, "ms"),
+      grainPitchDial(audioProcessor.getParameters(), lookAndFeel, "grainpitch", "Grain pitch", "Pitch per grain", 0.0, "st"),
+      densityDial(audioProcessor.getParameters(), lookAndFeel, "density", "Density", "Grains per second", 12.0, "gr/s"),
+      feedbackDial(audioProcessor.getParameters(), lookAndFeel, "feedback", "Feedback", "Amount recirculated", 18.0),
       toneDial(audioProcessor.getParameters(), lookAndFeel, "tone", "Tone", "Low-pass cutoff", 18000.0, "kHz"),
       widthDial(audioProcessor.getParameters(), lookAndFeel, "width", "Stereo width", "Width of the stereo image", 110.0),
       lfoRateDial(audioProcessor.getParameters(), lookAndFeel, "lforate", "Rate", "LFO cycles per second", 0.25, "rate"),
       lfoDepthDial(audioProcessor.getParameters(), lookAndFeel, "lfodepth", "Depth", "LFO modulation amount", 0.0),
       outputDial(audioProcessor.getParameters(), lookAndFeel, "output", "Output", "Final output level", 0.0, "dB"),
+      mistDial(audioProcessor.getParameters(), lookAndFeel, "fxmist", "Mist", "Soft diffusion and space", 0.0),
+      petalDial(audioProcessor.getParameters(), lookAndFeel, "fxpetal", "Petal", "Gentle chorus motion", 0.0),
+      warmthDial(audioProcessor.getParameters(), lookAndFeel, "fxwarmth", "Warmth", "Soft harmonic saturation", 0.0),
+      rippleDial(audioProcessor.getParameters(), lookAndFeel, "fxripple", "Ripple", "Phase shimmer", 0.0),
+      echoDial(audioProcessor.getParameters(), lookAndFeel, "fxecho", "Echo", "Botanical delay with feedback", 0.0),
       grainPad(audioProcessor)
 {
     setOpaque(true);
@@ -366,6 +391,7 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     setResizable(true, true);
     setResizeLimits(780, 465, 1560, 930);
     getConstrainer()->setFixedAspectRatio(1040.0 / 620.0);
+
     addAndMakeVisible(shiftDial);
     addAndMakeVisible(mixDial);
     addAndMakeVisible(bloomDial);
@@ -382,12 +408,16 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     addAndMakeVisible(lfoRateDial);
     addAndMakeVisible(lfoDepthDial);
     addAndMakeVisible(outputDial);
+    addAndMakeVisible(mistDial);
+    addAndMakeVisible(petalDial);
+    addAndMakeVisible(warmthDial);
+    addAndMakeVisible(rippleDial);
+    addAndMakeVisible(echoDial);
     addAndMakeVisible(grainPad);
 
     const auto setupTab = [this](juce::TextButton& button, const juce::String& label, Page page)
     {
         button.setButtonText(label);
-        button.setFont(makeAuraFont(10.0f, true));
         button.setColour(juce::TextButton::buttonColourId, panelColour);
         button.setColour(juce::TextButton::buttonOnColourId, warmAccentColour);
         button.setColour(juce::TextButton::textColourOffId, mutedTextColour);
@@ -399,6 +429,7 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     setupTab(spectralTab, "SPECTRAL", Page::spectral);
     setupTab(grainTab, "GRAIN", Page::grain);
     setupTab(modulationTab, "MOD", Page::modulation);
+    setupTab(effectsTab, "EFFECTS", Page::effects);
     setupTab(settingsTab, "SETTINGS", Page::settings);
 
     fftSelector.addItem("2048", 1);
@@ -409,7 +440,6 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
                                     "Feedback", "Tone", "Width" }, 1);
     const auto styleCombo = [](juce::ComboBox& combo)
     {
-        combo.setFont(makeAuraFont(11.0f));
         combo.setColour(juce::ComboBox::backgroundColourId, cardColour);
         combo.setColour(juce::ComboBox::textColourId, cardTextColour);
         combo.setColour(juce::ComboBox::arrowColourId, warmAccentColour);
@@ -463,14 +493,12 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
     savePresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
     savePresetButton.setColour(juce::TextButton::textColourOnId, brightLeafColour);
     savePresetButton.setButtonText("Save preset");
-    savePresetButton.setFont(makeAuraFont(10.0f, true));
     savePresetButton.onClick = [this] { beginSavingPreset(); };
     addAndMakeVisible(savePresetButton);
 
     const auto styleBankButton = [this](juce::TextButton& button, const juce::String& text)
     {
         button.setButtonText(text);
-        button.setFont(makeAuraFont(10.0f, true));
         button.setColour(juce::TextButton::buttonColourId, panelColour.brighter(0.08f));
         button.setColour(juce::TextButton::buttonOnColourId, panelColour.brighter(0.16f));
         button.setColour(juce::TextButton::textColourOffId, brightLeafColour);
@@ -497,14 +525,12 @@ AuraAudioProcessorEditor::AuraAudioProcessorEditor(AuraAudioProcessor& audioProc
 
     confirmPresetButton.setColour(juce::TextButton::buttonColourId, warmAccentColour);
     confirmPresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
-    confirmPresetButton.setFont(makeAuraFont(10.0f, true));
     confirmPresetButton.onClick = [this] { savePresetFromEditor(); };
     addAndMakeVisible(confirmPresetButton);
     confirmPresetButton.setVisible(false);
 
     cancelPresetButton.setColour(juce::TextButton::buttonColourId, softLineColour);
     cancelPresetButton.setColour(juce::TextButton::textColourOffId, brightLeafColour);
-    cancelPresetButton.setFont(makeAuraFont(10.0f, true));
     cancelPresetButton.onClick = [this] { cancelSavingPreset(); };
     addAndMakeVisible(cancelPresetButton);
     cancelPresetButton.setVisible(false);
@@ -533,6 +559,11 @@ AuraAudioProcessorEditor::~AuraAudioProcessorEditor()
     lfoRateDial.setLookAndFeel(nullptr);
     lfoDepthDial.setLookAndFeel(nullptr);
     outputDial.setLookAndFeel(nullptr);
+    mistDial.setLookAndFeel(nullptr);
+    petalDial.setLookAndFeel(nullptr);
+    warmthDial.setLookAndFeel(nullptr);
+    rippleDial.setLookAndFeel(nullptr);
+    echoDial.setLookAndFeel(nullptr);
 }
 
 void AuraAudioProcessorEditor::paint(juce::Graphics& graphics)
@@ -545,7 +576,7 @@ void AuraAudioProcessorEditor::paint(juce::Graphics& graphics)
     const auto offsetX = (static_cast<float>(getWidth()) - designWidth * scale) * 0.5f;
     const auto offsetY = (static_cast<float>(getHeight()) - designHeight * scale) * 0.5f;
     graphics.addTransform(juce::AffineTransform(scale, 0.0f, offsetX,
-                                                 0.0f, scale, offsetY));
+                                               0.0f, scale, offsetY));
 
     const juce::Rectangle<float> designBounds{0.0f, 0.0f, designWidth, designHeight};
     const auto panelBounds = designBounds.reduced(8.0f);
@@ -597,6 +628,10 @@ void AuraAudioProcessorEditor::paint(juce::Graphics& graphics)
             pageTitle = "MODULATION";
             pageDescription = "Animate a selected parameter with the internal LFO";
             break;
+        case Page::effects:
+            pageTitle = "EFFECTS";
+            pageDescription = "Botanical effects: mist, petal, warmth, ripple, echo";
+            break;
         case Page::settings:
             pageTitle = "GLOBAL SETTINGS";
             pageDescription = "Resolution, effect routing and output level";
@@ -644,6 +679,12 @@ void AuraAudioProcessorEditor::paint(juce::Graphics& graphics)
         graphics.drawText("Waveform", 605, 188, 160, 16, juce::Justification::centredLeft);
         graphics.drawText("LFO destination", 802, 188, 180, 16, juce::Justification::centredLeft);
         drawLfoScope(graphics, { 322.0f, 333.0f, 672.0f, 151.0f });
+    }
+    else if (activePage == Page::effects)
+    {
+        for (int column = 0; column < 5; ++column)
+            drawControlCard(322.0f + static_cast<float>(column) * 136.0f, 170.0f, 128.0f);
+        drawControlCard(322.0f, 333.0f, 672.0f, 151.0f);
     }
     else
     {
@@ -707,9 +748,9 @@ void AuraAudioProcessorEditor::drawLfoScope(juce::Graphics& graphics, juce::Rect
     }
     graphics.setColour(warmAccentColour);
     graphics.strokePath(wave, juce::PathStrokeType(2.0f, juce::PathStrokeType::curved,
-                                                    juce::PathStrokeType::rounded));
-    const auto phase = processor.getLfoPhase();
-    const auto lfo = processor.getLfoValue();
+                                                 juce::PathStrokeType::rounded));
+    const auto phase = audioProcessor.getLfoPhase();
+    const auto lfo = audioProcessor.getLfoValue();
     const auto markerX = plot.getX() + phase * plot.getWidth();
     const auto markerY = plot.getCentreY() - lfo * plot.getHeight() * 0.4f;
     graphics.setColour(warmAccentColour.withAlpha(0.2f));
@@ -732,9 +773,6 @@ void AuraAudioProcessorEditor::resized()
 
     const auto scaledBounds = [scale, offsetX, offsetY](int x, int y, int width, int height)
     {
-        // Round both edges from the design grid. Rounding the origin and size
-        // independently makes adjacent controls drift by a pixel at fractional
-        // scales, which is especially visible on the preset and tab buttons.
         const auto left = juce::roundToInt(offsetX + static_cast<float>(x) * scale);
         const auto top = juce::roundToInt(offsetY + static_cast<float>(y) * scale);
         const auto right = juce::roundToInt(offsetX + static_cast<float>(x + width) * scale);
@@ -770,44 +808,27 @@ void AuraAudioProcessorEditor::resized()
     grainPad.setBounds(scaledBounds(30, 205, 258, 278));
 
     spectralTab.setBounds(scaledBounds(322, 76, 104, 26));
-    spectralTab.setFont(makeAuraFont(10.0f * scale, true));
     grainTab.setBounds(scaledBounds(432, 76, 104, 26));
-    grainTab.setFont(makeAuraFont(10.0f * scale, true));
     modulationTab.setBounds(scaledBounds(542, 76, 104, 26));
-    modulationTab.setFont(makeAuraFont(10.0f * scale, true));
-    settingsTab.setBounds(scaledBounds(652, 76, 112, 26));
-    settingsTab.setFont(makeAuraFont(10.0f * scale, true));
+    effectsTab.setBounds(scaledBounds(652, 76, 112, 26));
+    settingsTab.setBounds(scaledBounds(770, 76, 112, 26));
 
     presetLabel.setText("PRESETS", juce::dontSendNotification);
     presetLabel.setBounds(scaledBounds(330, 137, 56, 26));
-    presetLabel.setFont(makeAuraFont(9.0f * scale, true));
     presetSelector.setBounds(scaledBounds(390, 135, 270, 28));
-    presetSelector.setFont(makeAuraFont(11.0f * scale));
     savePresetButton.setBounds(scaledBounds(670, 135, 108, 28));
-    savePresetButton.setFont(makeAuraFont(10.0f * scale, true));
     loadBankButton.setBounds(scaledBounds(786, 135, 100, 28));
-    loadBankButton.setFont(makeAuraFont(10.0f * scale, true));
     saveBankButton.setBounds(scaledBounds(894, 135, 100, 28));
-    saveBankButton.setFont(makeAuraFont(10.0f * scale, true));
     presetNameEditor.setBounds(scaledBounds(390, 135, 194, 28));
-    presetNameEditor.setFont(makeAuraFont(10.0f * scale));
     confirmPresetButton.setBounds(scaledBounds(590, 135, 78, 28));
-    confirmPresetButton.setFont(makeAuraFont(10.0f * scale, true));
     cancelPresetButton.setBounds(scaledBounds(674, 135, 88, 28));
-    cancelPresetButton.setFont(makeAuraFont(10.0f * scale, true));
 
     lfoShapeSelector.setBounds(scaledBounds(605, 209, 160, 30));
-    lfoShapeSelector.setFont(makeAuraFont(10.5f * scale));
     lfoTargetSelector.setBounds(scaledBounds(802, 209, 180, 30));
-    lfoTargetSelector.setFont(makeAuraFont(10.5f * scale));
     fftSelector.setBounds(scaledBounds(473, 208, 154, 30));
-    fftSelector.setFont(makeAuraFont(10.5f * scale));
     spectralEnableButton.setBounds(scaledBounds(346, 358, 190, 28));
-    spectralEnableButton.setFont(makeAuraFont(10.0f * scale));
     grainEnableButton.setBounds(scaledBounds(552, 358, 180, 28));
-    grainEnableButton.setFont(makeAuraFont(10.0f * scale));
     toneEnableButton.setBounds(scaledBounds(748, 358, 180, 28));
-    toneEnableButton.setFont(makeAuraFont(10.0f * scale));
 }
 
 void AuraAudioProcessorEditor::setActivePage(Page page)
@@ -816,7 +837,9 @@ void AuraAudioProcessorEditor::setActivePage(Page page)
     const auto spectral = page == Page::spectral;
     const auto grain = page == Page::grain;
     const auto modulation = page == Page::modulation;
+    const auto effects = page == Page::effects;
     const auto settings = page == Page::settings;
+
     shiftDial.setVisible(spectral);
     mixDial.setVisible(spectral);
     bloomDial.setVisible(spectral);
@@ -825,23 +848,34 @@ void AuraAudioProcessorEditor::setActivePage(Page page)
     highCutDial.setVisible(spectral);
     toneDial.setVisible(spectral);
     widthDial.setVisible(spectral);
+
     grainDial.setVisible(grain);
     grainSizeDial.setVisible(grain);
     grainPitchDial.setVisible(grain);
     densityDial.setVisible(grain);
     feedbackDial.setVisible(grain);
+
+    mistDial.setVisible(effects);
+    petalDial.setVisible(effects);
+    warmthDial.setVisible(effects);
+    rippleDial.setVisible(effects);
+    echoDial.setVisible(effects);
+
     lfoRateDial.setVisible(modulation);
     lfoDepthDial.setVisible(modulation);
     lfoShapeSelector.setVisible(modulation);
     lfoTargetSelector.setVisible(modulation);
+
     outputDial.setVisible(settings);
     fftSelector.setVisible(settings);
     spectralEnableButton.setVisible(settings);
     grainEnableButton.setVisible(settings);
     toneEnableButton.setVisible(settings);
+
     spectralTab.setToggleState(spectral, juce::dontSendNotification);
     grainTab.setToggleState(grain, juce::dontSendNotification);
     modulationTab.setToggleState(modulation, juce::dontSendNotification);
+    effectsTab.setToggleState(effects, juce::dontSendNotification);
     settingsTab.setToggleState(settings, juce::dontSendNotification);
     repaint();
 }
@@ -885,7 +919,7 @@ void AuraAudioProcessorEditor::refreshPresetMenu(int preferredItemID)
 
 void AuraAudioProcessorEditor::setParameterFromPreset(const juce::String& parameterID, float value)
 {
-    if (auto* parameter = processor.getParameters().getParameter(parameterID))
+    if (auto* parameter = audioProcessor.getParameters().getParameter(parameterID))
         parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
 }
 
@@ -914,14 +948,14 @@ void AuraAudioProcessorEditor::loadSelectedPreset()
     }
 
     auto state = juce::ValueTree::fromXml(*xml);
-    if (!state.isValid() || state.getType() != processor.getParameters().state.getType())
+    if (!state.isValid() || state.getType() != audioProcessor.getParameters().state.getType())
     {
         juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
                                                "Aura Preset", "This file is not a valid Aura preset.");
         return;
     }
 
-    processor.getParameters().replaceState(state);
+    audioProcessor.getParameters().replaceState(state);
 }
 
 void AuraAudioProcessorEditor::importPresetBank()
@@ -961,7 +995,7 @@ void AuraAudioProcessorEditor::importPresetFile(const juce::File& file)
 
     const auto writePreset = [&presetDirectory, this](juce::ValueTree state, juce::String name)
     {
-        if (!state.isValid() || state.getType() != processor.getParameters().state.getType())
+        if (!state.isValid() || state.getType() != audioProcessor.getParameters().state.getType())
             return juce::File{};
 
         name = name.trim();
@@ -1066,7 +1100,7 @@ void AuraAudioProcessorEditor::exportPresetBank()
             if (presetXml == nullptr)
                 continue;
             const auto state = juce::ValueTree::fromXml(*presetXml);
-            if (!state.isValid() || state.getType() != processor.getParameters().state.getType())
+            if (!state.isValid() || state.getType() != audioProcessor.getParameters().state.getType())
                 continue;
 
             auto* preset = bankXml->createNewChildElement("PRESET");
@@ -1142,7 +1176,7 @@ void AuraAudioProcessorEditor::savePresetFromEditor()
     for (int suffix = 2; file.existsAsFile() && !overwritingSelectedPreset; ++suffix)
         file = directory.getChildFile(safeName + " (" + juce::String(suffix) + ").aupreset");
 
-    auto state = processor.getParameters().copyState();
+    auto state = audioProcessor.getParameters().copyState();
     state.setProperty("auraStateVersion", 3, nullptr);
     state.setProperty("presetName", name, nullptr);
     const auto xml = state.createXml();

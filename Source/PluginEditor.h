@@ -11,9 +11,10 @@ public:
                           float sliderPosition, float startAngle, float endAngle,
                           juce::Slider& slider) override;
     void drawButtonText(juce::Graphics& graphics, juce::TextButton& button,
-                       bool isMouseOverButton, bool isButtonDown) override;
-    void drawComboBoxTextWhenNothingSelected(juce::Graphics& graphics, juce::ComboBox& box,
-                                            juce::Label& label) override;
+                        bool isMouseOverButton, bool isButtonDown) override;
+    void drawComboBoxText(juce::Graphics& graphics, int width, int height,
+                          bool isButtonDown, int itemIndex, const juce::String& itemText,
+                          juce::ComboBox& box) override;
 };
 
 class AuraDial final : public juce::Component
@@ -134,3 +135,4 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AuraAudioProcessorEditor)
 };
+
