@@ -61,7 +61,7 @@ public:
     void resized() override;
 
 private:
-    enum class Page { spectral, grain, modulation, settings };
+    enum class Page { spectral, grain, modulation, effects, settings };
     void timerCallback() override;
     void setActivePage(Page page);
     void drawLfoScope(juce::Graphics& graphics, juce::Rectangle<float> bounds);
@@ -93,10 +93,16 @@ private:
     AuraDial lfoRateDial;
     AuraDial lfoDepthDial;
     AuraDial outputDial;
+    AuraDial mistDial;
+    AuraDial petalDial;
+    AuraDial warmthDial;
+    AuraDial rippleDial;
+    AuraDial echoDial;
     AuraGrainPad grainPad;
     juce::TextButton spectralTab{ "SPECTRAL" };
     juce::TextButton grainTab{ "GRAIN" };
     juce::TextButton modulationTab{ "MOD" };
+    juce::TextButton effectsTab{ "EFFECTS" };
     juce::TextButton settingsTab{ "SETTINGS" };
     juce::ComboBox fftSelector;
     juce::ComboBox lfoShapeSelector;
