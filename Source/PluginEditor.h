@@ -10,6 +10,10 @@ public:
     void drawRotarySlider(juce::Graphics& graphics, int x, int y, int width, int height,
                           float sliderPosition, float startAngle, float endAngle,
                           juce::Slider& slider) override;
+    void drawButtonText(juce::Graphics& graphics, juce::TextButton& button,
+                       bool isMouseOverButton, bool isButtonDown) override;
+    void drawComboBoxTextWhenNothingSelected(juce::Graphics& graphics, juce::ComboBox& box,
+                                            juce::Label& label) override;
 };
 
 class AuraDial final : public juce::Component
@@ -75,7 +79,7 @@ private:
     void importPresetFile(const juce::File& file);
     void setParameterFromPreset(const juce::String& parameterID, float value);
 
-    AuraAudioProcessor& processor;
+    AuraAudioProcessor& audioProcessor;
     AuraLookAndFeel lookAndFeel;
     AuraDial shiftDial;
     AuraDial mixDial;
